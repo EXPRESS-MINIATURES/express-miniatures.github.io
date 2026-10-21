@@ -1,0 +1,1411 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1d2023">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icone-192.png">
+<title>Pupitre Express Miniatures</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Michroma&family=Barlow+Semi+Condensed:wght@500;600;700&display=swap">
+<style>
+/* Une telecommande en plastique moule : un seul look, assume, sans variante
+   sombre. Deux colonnes en paysage -- a gauche l'ecran, l'arret, les
+   touches et la molette empiles ; a droite les curseurs, sous le pouce.
+   Empilees en portrait. */
+:root {
+  color-scheme: light;
+  --socle:          #1d2023;   /* la table autour de la telecommande */
+  --plastique:      #d2d3cf;   /* gris clair, legerement froid */
+  --plastique-haut: #e2e3df;
+  --plastique-bas:  #bfc1bc;
+  --encre:          #3f4346;   /* serigraphie sur le plastique */
+  --encre-douce:    #6a6e71;
+  --rouge:          #c8202a;
+  --rouge-clair:    #e2474e;
+  --rouge-fonce:    #8b1219;
+  --legende:        #fbefec;   /* marquage sur les touches rouges */
+  --fente:          #24272a;
+  --cadre-lcd:      #34383b;
+  --lcd:            #a5b580;
+  --lcd-bord:       #8d9e69;
+  --pixel:          #1f2a16;
+  --led-vert:       #5be27f;
+  --led-ambre:      #ffb43a;
+  --led-eteinte:    #5c5050;
+  --f-marque:  "Michroma", "Eurostile", "Arial Black", sans-serif;
+  --f-legende: "Barlow Semi Condensed", "Roboto Condensed", "Arial Narrow", sans-serif;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+html, body { height: 100%; }
+[hidden] { display: none !important; }   /* sinon display:grid du volet l'emporte */
+body {
+  margin: 0;
+  background: var(--socle);
+  color: var(--encre);
+  font: 500 14px/1.3 var(--f-legende);
+  -webkit-tap-highlight-color: transparent;
+  overflow: hidden;
+  user-select: none; -webkit-user-select: none;
+}
+button { font: inherit; color: inherit; }
+
+.socle {
+  height: 100%;
+  box-sizing: border-box;
+  padding-block: 8px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+
+/* ---------------------------------------------------------- le boitier */
+.boitier {
+  position: relative;
+  height: 100%;
+  box-sizing: border-box;
+  border-radius: 26px;
+  padding: 14px 16px 12px;
+  display: grid;
+  /* largeur de la colonne de gauche : celle d'un ecran aussi grand que la
+     hauteur le permet, une fois l'arret, les touches et la molette poses */
+  --reserve: 352px;
+  --gauche: clamp(260px, calc((100dvh - var(--reserve)) * 1.714 + 20px), 40vw);
+  grid-template-columns: var(--gauche) minmax(300px, 1fr);
+  gap: 16px;
+  background-color: var(--plastique);
+  background-image: var(--marbre, none),
+    linear-gradient(165deg, var(--plastique-haut), var(--plastique) 45%, var(--plastique-bas));
+  background-size: 900px 600px, 100% 100%;
+  box-shadow:
+    inset 0 2px 0 rgba(255,255,255,.75),
+    inset 0 -3px 0 rgba(0,0,0,.14),
+    inset 0 0 0 1px rgba(0,0,0,.10),
+    0 14px 34px rgba(0,0,0,.55);
+}
+/* la ligne de joint du moule, a quelques millimetres du bord */
+.boitier::before {
+  content: ""; position: absolute; inset: 6px; border-radius: 21px;
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.07), inset 0 1px 0 1px rgba(255,255,255,.35);
+  pointer-events: none;
+}
+.col { min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: 9px; }
+
+.imprime {
+  margin: 0;
+  font: 700 10.5px/1 var(--f-legende);
+  letter-spacing: .16em; text-transform: uppercase;
+  color: var(--encre);
+}
+.imprime.douce { color: var(--encre-douce); font-weight: 600; letter-spacing: .1em; }
+
+/* ---------------------------------------------------------- marque */
+.marque { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
+.marque .nom { font: 400 11.5px/1 var(--f-marque); letter-spacing: .06em; color: var(--encre); white-space: nowrap; flex: none; }
+.marque .modele { font: 600 10px/1 var(--f-legende); letter-spacing: .14em; color: var(--encre-douce);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.marque .led { margin-left: auto; align-self: center; }
+
+/* ---------------------------------------------------------- ecran */
+.ecran {
+  justify-self: center;
+  width: min(100%, calc((100dvh - var(--reserve)) * 1.714 + 20px));
+  min-width: 150px;
+  box-sizing: border-box;
+  padding: 9px 10px 11px;
+  border-radius: 12px 12px 18px 18px;
+  background: linear-gradient(180deg, #44494c, var(--cadre-lcd) 30%, #2a2d30);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.18), inset 0 -2px 4px rgba(0,0,0,.4),
+              0 1px 0 rgba(255,255,255,.6);
+}
+.vitre {
+  position: relative; border-radius: 5px; overflow: hidden;
+  background: radial-gradient(120% 90% at 40% 35%, var(--lcd), var(--lcd-bord));
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.35), inset 0 3px 7px rgba(0,0,0,.28);
+}
+.vitre canvas { display: block; width: 100%; height: auto; aspect-ratio: 192 / 112; }
+.vitre::after { /* reflet du plexiglas */
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(118deg, rgba(255,255,255,.22) 0 22%, rgba(255,255,255,0) 22.5% 100%);
+}
+.ecran .sous { margin: 6px 2px 0; display: flex; justify-content: space-between;
+  font: 600 9px/1 var(--f-legende); letter-spacing: .18em; color: #9aa0a3; }
+
+/* ---------------------------------------------------------- touches rouges */
+.touche {
+  position: relative;
+  border: 0; border-radius: 11px;
+  background: linear-gradient(180deg, var(--rouge-clair), var(--rouge) 46%, #b01c24);
+  color: var(--legende);
+  font: 700 15px/1 var(--f-legende); letter-spacing: .04em;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.35),
+    inset 0 -2px 0 rgba(0,0,0,.22),
+    0 2px 0 var(--rouge-fonce),
+    0 4px 6px rgba(0,0,0,.28);
+  text-shadow: 0 1px 0 rgba(0,0,0,.25);
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: transform .05s, box-shadow .05s;
+}
+.touche:active, .touche.appui {
+  transform: translateY(2px);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.2), inset 0 -1px 0 rgba(0,0,0,.25),
+              0 0 0 var(--rouge-fonce), 0 1px 2px rgba(0,0,0,.3);
+}
+.touche:focus-visible, .fente:focus-visible { outline: 2px solid #2b6fd6; outline-offset: 3px; }
+.touche.petite { font-size: 11.5px; letter-spacing: .06em; }
+
+.led {
+  display: inline-block; width: 7px; height: 7px; border-radius: 50%;
+  background: var(--led-eteinte);
+  box-shadow: inset 0 1px 1px rgba(0,0,0,.5), 0 0 0 1px rgba(0,0,0,.25);
+}
+.led.vert  { background: var(--led-vert);  box-shadow: 0 0 6px var(--led-vert),  inset 0 -1px 1px rgba(0,0,0,.25); }
+.led.ambre { background: var(--led-ambre); box-shadow: 0 0 6px var(--led-ambre), inset 0 -1px 1px rgba(0,0,0,.25); }
+.led.clignote { animation: clignote .7s steps(2, start) infinite; }
+@keyframes clignote { to { visibility: hidden; } }
+
+/* ---------------------------------------------------------- sons : la molette
+   Une molette sans fin, comme un encodeur : chaque cran de 30 degres passe
+   au son suivant. La graduation est imprimee sur le plastique autour. */
+.col-centre {
+  display: grid; grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto auto auto auto minmax(120px, 1fr);
+  grid-template-areas: "marque" "ecran" "arret" "rang" "sons";
+}
+.col-centre .marque { grid-area: marque; }
+.col-centre .ecran  { grid-area: ecran; }
+.col-centre .arret  { grid-area: arret; }
+.col-centre .rang   { grid-area: rang; }
+/* Le bloc sons prend la hauteur restante ; la molette s'y cale au plus grand. */
+.sons {
+  grid-area: sons; min-height: 0;
+  container-type: size;
+  display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 16px; align-items: center;
+  padding-top: 4px;
+}
+.molette-zone { display: grid; place-items: center; }
+.sons-cote { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.molette {
+  position: relative;
+  width: clamp(84px, min(100cqh - 8px, 100cqw - 200px), 210px); aspect-ratio: 1;
+  border-radius: 50%;
+  touch-action: none; cursor: grab;
+}
+.molette-socle {           /* porte la graduation masquee ; le corps est a cote */
+  position: absolute; inset: 0; pointer-events: none; border-radius: 50%;
+  background: repeating-conic-gradient(from -1.2deg, var(--encre-douce) 0 2.4deg, transparent 2.4deg 30deg);
+  -webkit-mask: radial-gradient(circle, transparent 0 64%, #000 64.5% 71%, transparent 71.5%);
+          mask: radial-gradient(circle, transparent 0 64%, #000 64.5% 71%, transparent 71.5%);
+}
+.molette-corps {
+  position: absolute; inset: 14%;
+  border-radius: 50%;
+  transform: rotate(var(--a, 0deg));
+  transition: transform .09s ease-out;
+  /* bord moleté : stries sombres serrees */
+  background:
+    radial-gradient(circle at 50% 50%, transparent 0 72%, rgba(0,0,0,0) 72%),
+    repeating-conic-gradient(var(--rouge-fonce) 0 3deg, var(--rouge) 3deg 9deg);
+  /* que des ombres internes : decalees, elles tourneraient avec le corps
+     et deformeraient le contour */
+}
+.molette::after {          /* reflet du bord, fixe au-dessus : la lumiere ne tourne pas */
+  content: ""; position: absolute; inset: 14%; border-radius: 50%; pointer-events: none;
+  box-shadow: inset 0 2px 0 rgba(255,255,255,.25), inset 0 0 0 1px rgba(0,0,0,.18);
+}
+.molette::before {         /* epaisseur et ombre portee, fixes sous le corps */
+  content: ""; position: absolute; inset: 14%; border-radius: 50%;
+  background: var(--rouge-fonce);
+  box-shadow: 0 4px 0 var(--rouge-fonce), 0 7px 12px rgba(0,0,0,.35);
+}
+.molette-corps::before {   /* chapeau lisse, plus clair */
+  content: ""; position: absolute; inset: 14%;
+  border-radius: 50%;
+  transform: rotate(calc(-1 * var(--a, 0deg)));   /* contre-rotation : reflet fixe */
+  transition: transform .09s ease-out;
+  background: radial-gradient(circle at 38% 32%, var(--rouge-clair), var(--rouge) 55%, #a91b23);
+  box-shadow: inset 0 2px 0 rgba(255,255,255,.35), inset 0 -2px 3px rgba(0,0,0,.25), 0 0 0 1px rgba(0,0,0,.15);
+}
+.molette-corps::after {    /* repere */
+  content: ""; position: absolute; left: 50%; top: 18%;
+  width: 5px; height: 22%; transform: translateX(-50%);
+  border-radius: 3px; background: var(--legende);
+  box-shadow: 0 1px 0 rgba(0,0,0,.3);
+}
+.molette.saisie { cursor: grabbing; }
+.molette:focus-visible { outline: 2px solid #2b6fd6; outline-offset: 4px; }
+.sons-touches { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+.sons-touches .touche { height: 38px; font-size: 11px; letter-spacing: 0; white-space: nowrap; padding: 0 2px; }
+.molette-aide { line-height: 1.35; }
+
+/* Paysage bas (telephone) : l'ecran garde sa hauteur, la molette passe a
+   cote de l'arret et des touches, le volume en colonne contre elle. */
+@media (orientation: landscape) and (max-height: 540px) {
+  .boitier { --reserve: 256px; --gauche: clamp(370px, 42vw, 470px); }
+  .col-centre {
+    grid-template-columns: minmax(0, 1fr) 204px;
+    grid-template-rows: auto auto auto auto;
+    grid-template-areas: "marque marque" "ecran ecran" "arret sons" "rang sons";
+  }
+  .sons { gap: 8px; padding-top: 0; grid-template-columns: auto 56px; min-height: 144px; }
+  .sons .molette { width: clamp(84px, min(100cqh - 8px, 100cqw - 64px), 160px); }
+  .col-centre .arret, .col-centre .rang { align-self: center; }
+  .col-centre .rang { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+  .col-centre .rang .touche { font-size: 11px; letter-spacing: .03em; gap: 4px; padding: 0 2px; }
+  .sons .imprime, .molette-aide { display: none; }
+  .sons-touches { grid-template-columns: 1fr; gap: 5px; }
+  .sons-touches .touche { height: 30px; }
+}
+
+/* ---------------------------------------------------------- centre */
+.arret {
+  height: 54px; flex: none;
+  border-radius: 27px;
+  font: 700 19px/1 var(--f-legende); letter-spacing: .22em;
+  background: radial-gradient(130% 120% at 50% 0%, #ee5056, var(--rouge) 55%, #a3161e);
+  box-shadow:
+    inset 0 2px 0 rgba(255,255,255,.35), inset 0 -3px 0 rgba(0,0,0,.25),
+    0 0 0 4px #b9bbb6, 0 0 0 5px rgba(0,0,0,.12),
+    0 3px 0 4px var(--rouge-fonce), 0 6px 10px 4px rgba(0,0,0,.25);
+  margin: 4px 5px 6px;
+}
+.arret:active { box-shadow: inset 0 2px 0 rgba(255,255,255,.2), inset 0 -1px 0 rgba(0,0,0,.25),
+  0 0 0 4px #b9bbb6, 0 0 0 5px rgba(0,0,0,.12), 0 0 0 4px var(--rouge-fonce); }
+.rang { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.rang .touche { height: 38px; font-size: 12px; letter-spacing: .08em;
+  display: flex; align-items: center; justify-content: center; gap: 6px; }
+
+/* ---------------------------------------------------------- curseurs */
+.col-voies { gap: 6px; }
+.bandeau {
+  flex: 1; min-height: 0;
+  display: grid; grid-template-columns: repeat(10, 1fr);
+  padding: 8px 4px 6px;
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(0,0,0,.06), rgba(0,0,0,.02));
+  box-shadow: inset 0 2px 4px rgba(0,0,0,.16), inset 0 -1px 0 rgba(255,255,255,.5);
+}
+.voie { min-width: 0; container-type: inline-size; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.voie .num { font: 700 13px/1 var(--f-legende); color: var(--encre); }
+.voie .num.touchee { color: var(--rouge); }
+.voie .sens { font: 600 8.5px/1 var(--f-legende); letter-spacing: .12em; color: var(--encre-douce); }
+.fente {
+  position: relative; flex: 1; width: 100%; min-height: 120px;
+  touch-action: none; cursor: grab;
+  --t: .5;          /* position du curseur, 0 en haut, 1 en bas */
+  /* le curseur suit la largeur de la voie : gros bouton quand il y a la place */
+  --lc: clamp(34px, 80cqw, 96px);
+  --hc: clamp(32px, 62cqw, 64px);
+}
+.fente::before { /* la fente dans le plastique */
+  content: ""; position: absolute; left: 50%; top: 0; bottom: 0; width: 7px; transform: translateX(-50%);
+  width: clamp(7px, 12cqw, 14px);
+  border-radius: 4px; background: var(--fente);
+  box-shadow: inset 0 2px 3px rgba(0,0,0,.7), 0 1px 0 rgba(255,255,255,.55);
+}
+.graduation { position: absolute; left: 50%; width: calc(var(--lc) + 16px); height: 100%; transform: translateX(-50%); pointer-events: none; }
+.graduation i { position: absolute; left: 0; right: 0; height: 1px; }
+.graduation i::before, .graduation i::after { content: ""; position: absolute; top: 0; height: 1px; width: 7px; background: var(--encre-douce); }
+.graduation i::before { left: 0; } .graduation i::after { right: 0; }
+.graduation i.zero::before, .graduation i.zero::after { width: 10px; height: 2px; top: -.5px; background: var(--encre); }
+.curseur {
+  position: absolute; left: 50%;
+  top: calc(var(--t) * (100% - var(--hc)));
+  width: min(var(--lc), 92%); height: var(--hc); transform: translateX(-50%);
+  border-radius: 7px;
+  background:
+    repeating-linear-gradient(180deg, rgba(0,0,0,0) 0 7px, rgba(0,0,0,.22) 7px 8px, rgba(255,255,255,.18) 8px 9px, rgba(0,0,0,0) 9px 10px) 0 4px / 100% calc(100% - 8px) no-repeat,
+    linear-gradient(180deg, var(--rouge-clair), var(--rouge) 50%, #a91b23);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.4), inset 0 -2px 0 rgba(0,0,0,.25),
+              0 3px 0 var(--rouge-fonce), 0 5px 7px rgba(0,0,0,.35);
+  pointer-events: none;
+}
+.fente.anim .curseur { transition: top .35s cubic-bezier(.3,.7,.2,1); }
+.fente.saisie { cursor: grabbing; }
+.fente.saisie .curseur { box-shadow: inset 0 1px 0 rgba(255,255,255,.4), inset 0 -2px 0 rgba(0,0,0,.25),
+              0 2px 0 var(--rouge-fonce), 0 3px 4px rgba(0,0,0,.35), 0 0 0 3px rgba(200,32,42,.18); }
+.legende-voies { text-align: center; }
+
+/* ---------------------------------------------------------- volet de reglages */
+.volet {
+  position: absolute; inset: 0; z-index: 5;
+  border-radius: 26px; overflow: auto;
+  background-color: var(--plastique);
+  background-image: var(--marbre, none), linear-gradient(165deg, var(--plastique-haut), var(--plastique-bas));
+  background-size: 900px 600px, 100% 100%;
+  box-sizing: border-box;
+  padding: 16px 20px;
+  display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 10px 26px; align-content: start;
+}
+.volet h2 { grid-column: 1 / -1; margin: 0; font: 400 13px/1.2 var(--f-marque); letter-spacing: .08em; text-transform: uppercase; color: var(--encre); }
+.reglages { display: flex; flex-direction: column; gap: 9px; min-width: 0; }
+.ligne-regl { display: grid; grid-template-columns: 96px repeat(2, 38px) minmax(64px, 1fr) repeat(2, 38px); gap: 6px; align-items: center; }
+.ligne-regl.court { grid-template-columns: 96px 38px minmax(64px, 1fr) 38px; }
+.ligne-regl .etiq { font: 700 11px/1.1 var(--f-legende); letter-spacing: .1em; text-transform: uppercase; }
+.ligne-regl .touche { height: 34px; font-size: 13px; }
+.ligne-regl output {
+  height: 34px; display: grid; place-items: center; border-radius: 6px;
+  background: var(--lcd); color: var(--pixel);
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.3), inset 0 2px 4px rgba(0,0,0,.25);
+  font: 700 15px/1 var(--f-legende); font-variant-numeric: tabular-nums; letter-spacing: .04em;
+}
+.ligne-noms { display: grid; gap: 4px; }
+.ligne-noms .etiq { font: 700 11px/1.1 var(--f-legende); letter-spacing: .1em; text-transform: uppercase; }
+#nomsSons { width: 100%; box-sizing: border-box; resize: vertical; min-height: 96px;
+  font: 600 14px/1.4 var(--f-legende); color: var(--pixel); background: var(--lcd);
+  border: 0; border-radius: 6px; padding: 8px 10px;
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.3), inset 0 2px 4px rgba(0,0,0,.25); }
+.note code { font: 600 12px/1 ui-monospace, Menlo, monospace; background: rgba(0,0,0,.07); padding: 1px 4px; border-radius: 3px; }
+.note { margin: 0; font: 500 12.5px/1.35 var(--f-legende); color: var(--encre); max-width: 46ch; }
+.note.alerte { color: var(--rouge-fonce); font-weight: 700; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.actions .touche { height: 38px; padding: 0 14px; font-size: 13px; letter-spacing: .06em; }
+.actions .touche.sobre { background: linear-gradient(180deg, #8f9396, #6b6f72); box-shadow: inset 0 1px 0 rgba(255,255,255,.3), 0 2px 0 #3f4346, 0 4px 6px rgba(0,0,0,.25); }
+.aide { font: 500 12.5px/1.45 var(--f-legende); color: var(--encre); min-width: 0; }
+.aide h3 { margin: 0 0 4px; font: 700 11px/1.2 var(--f-legende); letter-spacing: .14em; text-transform: uppercase; }
+.aide ul { margin: 0 0 10px; padding-left: 16px; max-width: 52ch; }
+.aide li + li { margin-top: 3px; }
+.aide code { font: 600 12px/1 ui-monospace, "SFMono-Regular", Menlo, monospace; background: rgba(0,0,0,.07); padding: 1px 4px; border-radius: 3px; }
+
+.annonce { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+
+@media (orientation: landscape) and (max-height: 380px) {
+  .boitier { --reserve: 232px; }
+  .sons { min-height: 120px; }
+}
+/* ---------------------------------------------------------- portrait */
+@media (orientation: portrait), (max-width: 640px) {
+  body { overflow: auto; }
+  html, body { height: auto; }
+  .socle { height: auto; }
+  .boitier {
+    height: auto;
+    grid-template-columns: 1fr;
+    grid-template-areas: "centre" "voies";
+  }
+  .col-centre { grid-area: centre; }
+  .col-voies  { grid-area: voies; height: 380px; }
+  .sons       { height: 170px; }
+  .ecran      { width: 100%; }
+  .volet      { grid-template-columns: 1fr; }
+  .ligne-regl { grid-template-columns: 80px repeat(2, 36px) minmax(56px, 1fr) repeat(2, 36px); }
+  .ligne-regl.court { grid-template-columns: 80px 36px minmax(56px, 1fr) 36px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fente.anim .curseur { transition: none; }
+  .led.clignote { animation: none; }
+}
+</style>
+<script>
+/* Le marbre du plastique : des courbes de niveau de bruit fractal, qui ont
+   exactement l'allure de veines, plus un fin mouchetis. Pose avant le
+   premier dessin pour que la telecommande n'apparaisse jamais lisse. */
+(function () {
+  var veines = "<svg xmlns='http://www.w3.org/2000/svg' width='900' height='600'>"
+    + "<filter id='v' x='0' y='0' width='100%' height='100%'>"
+    + "<feTurbulence type='fractalNoise' stitchTiles='stitch' baseFrequency='0.0032 0.0085' numOctaves='5' seed='11'/>"
+    + "<feColorMatrix type='matrix' values='0 0 0 0 .42  0 0 0 0 .43  0 0 0 0 .42  1 0 0 0 0'/>"
+    + "<feComponentTransfer><feFuncA type='table' tableValues='0 0 0 0 0 .06 .40 .06 0 0 0 0 0'/></feComponentTransfer>"
+    + "</filter>"
+    + "<filter id='c' x='0' y='0' width='100%' height='100%'>"
+    + "<feTurbulence type='fractalNoise' stitchTiles='stitch' baseFrequency='0.006 0.004' numOctaves='4' seed='4'/>"
+    + "<feColorMatrix type='matrix' values='0 0 0 0 .97  0 0 0 0 .97  0 0 0 0 .96  1 0 0 0 0'/>"
+    + "<feComponentTransfer><feFuncA type='table' tableValues='0 0 0 0 0 0 0 .05 .42 .05 0 0 0'/></feComponentTransfer>"
+    + "</filter>"
+    + "<filter id='m' x='0' y='0' width='100%' height='100%'>"
+    + "<feTurbulence type='fractalNoise' stitchTiles='stitch' baseFrequency='0.9' numOctaves='1' seed='3'/>"
+    + "<feColorMatrix type='matrix' values='0 0 0 0 .32  0 0 0 0 .33  0 0 0 0 .32  1 0 0 0 0'/>"
+    + "<feComponentTransfer><feFuncA type='discrete' tableValues='0 0 0 0 0 0 0 0 0 0 0 0 .32'/></feComponentTransfer>"
+    + "</filter>"
+    + "<rect width='100%' height='100%' filter='url(#v)'/>"
+    + "<rect width='100%' height='100%' filter='url(#c)'/>"
+    + "<rect width='100%' height='100%' filter='url(#m)'/>"
+    + "</svg>";
+  document.documentElement.style.setProperty("--marbre",
+    'url("data:image/svg+xml,' + encodeURIComponent(veines) + '")');
+})();
+</script>
+</head>
+<body>
+<div class="socle">
+  <main class="boitier" id="boitier">
+
+    <section class="col col-centre" aria-label="Écran et commandes générales">
+      <header class="marque">
+        <span class="nom">Express Miniatures</span>
+        <span class="modele" id="modele">Pupitre · 10 voies</span>
+        <span class="led" id="ledLien" title="Liaison"></span>
+      </header>
+      <div class="ecran">
+        <div class="vitre"><canvas id="lcd" width="768" height="448" aria-hidden="true"></canvas></div>
+        <div class="sous"><span>BLE</span><span>192 × 112</span></div>
+      </div>
+      <button class="touche arret" id="arret">ARRÊT</button>
+      <div class="rang">
+        <button class="touche" id="bt" aria-label="Connexion Bluetooth"><span class="led" id="ledBt"></span>BT</button>
+        <button class="touche" id="lum" aria-label="Éclairage des bâtiments"><span class="led" id="ledLum"></span>LUM</button>
+        <button class="touche" id="regl" aria-label="Réglages">RÉGL.</button>
+        <button class="touche" id="plein" aria-label="Plein écran">⛶</button>
+      </div>
+      <div class="sons" role="group" aria-label="Sons">
+        <div class="molette-zone">
+          <div class="molette" id="molette" role="slider" tabindex="0"
+               aria-label="Choix du son" aria-valuemin="2" aria-valuemax="10" aria-valuenow="2">
+            <div class="molette-socle"></div>
+            <div class="molette-corps" id="moletteCorps"></div>
+          </div>
+        </div>
+        <div class="sons-cote">
+          <p class="imprime">Sons</p>
+          <p class="imprime douce molette-aide">Tourner : choisir<br>2 tapes : jouer</p>
+          <div class="sons-touches">
+            <button class="touche" id="volMoins" aria-label="Baisser le volume">VOL −</button>
+            <button class="touche" id="sonStop" aria-label="Arrêter le son">■</button>
+            <button class="touche" id="volPlus" aria-label="Monter le volume">VOL +</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="col col-voies" aria-label="Vitesse des voies">
+      <div class="bandeau" id="bandeau"></div>
+      <p class="imprime douce legende-voies">Haut : avant · Centre : arrêt · Bas : arrière</p>
+    </section>
+
+    <div class="volet" id="volet" hidden role="dialog" aria-modal="true" aria-labelledby="titreVolet">
+      <h2 id="titreVolet">Réglages de la carte</h2>
+      <div class="reglages">
+        <div class="ligne-regl court">
+          <span class="etiq">Voie</span>
+          <button class="touche" data-rvoie="-1" aria-label="Voie précédente">−</button>
+          <output id="rVoie">1</output>
+          <button class="touche" data-rvoie="1" aria-label="Voie suivante">+</button>
+        </div>
+        <div class="ligne-regl">
+          <span class="etiq">Neutre</span>
+          <button class="touche" data-trim="-5">−5</button>
+          <button class="touche" data-trim="-1">−1</button>
+          <output id="rTrim">0 µs</output>
+          <button class="touche" data-trim="1">+1</button>
+          <button class="touche" data-trim="5">+5</button>
+        </div>
+        <div class="ligne-regl court">
+          <span class="etiq">Zone morte</span>
+          <button class="touche" data-zone="-5">−5</button>
+          <output id="rZone">50 µs</output>
+          <button class="touche" data-zone="5">+5</button>
+        </div>
+        <p class="note">Règle le neutre voie à l'arrêt, en regardant la courroie : il s'applique tout de suite. La zone morte décide de ta vitesse la plus lente.</p>
+        <label class="ligne-noms" for="nomsSons"><span class="etiq">Noms des sons</span>
+          <span class="note">Un nom par ligne : la ligne 1 pour <code>0001.mp3</code>, la ligne 2 pour <code>0002.mp3</code>, et ainsi de suite. Le son 1 est l'accueil, joué par la carte au démarrage : la molette commence au son 2. Gardés sur ce téléphone.</span></label>
+        <textarea id="nomsSons" rows="5" spellcheck="false"></textarea>
+        <p class="note" id="noteSauve">Rien à enregistrer.</p>
+        <div class="actions">
+          <button class="touche" id="enregistrer">Enregistrer dans la carte</button>
+          <button class="touche sobre" id="demo">Mode démo</button>
+          <button class="touche sobre" id="deco">Déconnecter</button>
+          <button class="touche sobre" id="fermer">Fermer</button>
+        </div>
+      </div>
+      <div class="aide">
+        <h3>Pour se connecter</h3>
+        <ul>
+          <li>La carte ESP32 s'annonce sous le nom <code>Express Miniatures</code>. Choisis-la dans la liste.</li>
+          <li>Chrome ou Samsung Internet sur Android, page ouverte en <code>https://</code>.</li>
+          <li>Un module HM-10, AT-09 ou JDY-08 marche aussi, il s'appelle alors <code>HMSoft</code> ou <code>BT05</code>. Un HC-05 n'apparaîtra jamais : c'est du Bluetooth classique.</li>
+        </ul>
+        <h3>Sécurité</h3>
+        <ul>
+          <li>Si le téléphone se tait 1,5 s, la carte arrête les dix voies. Écran éteint ou appli quittée : tout s'arrête.</li>
+          <li>Au retour, les curseurs repartent de zéro.</li>
+          <li>Double-tape sur un curseur pour le remettre au centre.</li>
+        </ul>
+      </div>
+    </div>
+  </main>
+</div>
+<div class="annonce" id="annonce" aria-live="polite"></div>
+
+<script>
+(function () {
+"use strict";
+
+var NB = 10, CR = 20;
+var $ = function (s) { return document.querySelector(s); };
+var maintenant = function () { return performance.now(); };
+
+/* ========================================================================
+   ETAT -- reflet de la carte. La carte reste la source de verite : ses
+   trames d'etat corrigent les curseurs, sauf celui qu'on tient sous le doigt.
+   ===================================================================== */
+var S = {
+  cran: new Array(NB).fill(0),
+  cote: new Array(NB).fill(1),     // sens du dernier mouvement, pour situer une butee
+  butees: 0, lum: false, vol: 6, aSauver: false,
+  lien: "off",                     // off | connexion | on | perdu | demo
+  msg: "", msgFin: 0, alarme: false,
+  touchee: -1, toucheeT: 0, son: 0, dernierEtat: 0, muette: false,
+  rVoie: 0, zone: 50, trim: new Array(NB).fill(0),
+  nbVoies: NB                      // annonce par la carte ; NB = format du protocole
+};
+var toucheT = new Array(NB).fill(0);
+var tenus = new Set();
+
+try {
+  var memo = JSON.parse(localStorage.getItem("cartoloco-reglages") || "null");
+  if (memo && Array.isArray(memo.trim) && memo.trim.length === NB) { S.trim = memo.trim; S.zone = memo.zone || 50; }
+} catch (e) {}
+try {
+  var nv = parseInt(localStorage.getItem("cartoloco-nbvoies"), 10);
+  if (nv >= 1 && nv <= NB) S.nbVoies = nv;
+} catch (e) {}
+
+function memoriser() {
+  try { localStorage.setItem("cartoloco-reglages", JSON.stringify({ trim: S.trim, zone: S.zone })); } catch (e) {}
+}
+
+function message(t, ms, alarme) {
+  S.msg = t; S.msgFin = maintenant() + (ms || 2600); S.alarme = !!alarme;
+  $("#annonce").textContent = t;
+  aRedessiner = true;
+}
+function vibrer(ms) { try { if (navigator.vibrate) navigator.vibrate(ms); } catch (e) {} }
+
+/* ========================================================================
+   TRANSPORT -- file coalescee : seule la DERNIERE valeur de chaque curseur
+   part, et les commandes sont groupees par paquets de 20 octets, la taille
+   d'une ecriture BLE sur un HM-10.
+   ===================================================================== */
+var T = { mode: "aucun", file: new Map(), ecrit: false, dernier: 0, rx: "", pause: false };
+
+function lienActif() { return S.lien === "on" || S.lien === "demo"; }
+
+function envoyer(cmd, cle) {
+  if (!lienActif()) return false;
+  T.file.set(cle || cmd, cmd);
+  return true;
+}
+function envoyerUrgent(cmd) {
+  var neuf = new Map([[cmd, cmd]]);
+  T.file.forEach(function (c, k) { if (k[0] !== "V") neuf.set(k, c); });
+  T.file = neuf;
+  vider();
+}
+
+async function vider() {
+  if (T.ecrit || !lienActif() || T.pause) return;
+  var t = maintenant();
+  if (T.file.size === 0) {
+    if (t - T.dernier < 450) return;
+    T.file.set("P", "P");                       // battement
+  }
+  var paquet = "";
+  for (var entree of T.file) {
+    var l = entree[1] + "\n";
+    if (paquet.length + l.length > 20) break;
+    paquet += l; T.file.delete(entree[0]);
+  }
+  T.ecrit = true; T.dernier = t;
+  try { await transmettre(paquet); }
+  catch (e) { /* la trame d'etat suivante resynchronisera */ }
+  T.ecrit = false;
+}
+setInterval(vider, 40);
+
+/* Ecran eteint ou appli quittee : on cesse VOLONTAIREMENT de battre. La
+   carte arrete tout au bout de 1,5 s -- on ne pilote pas un train qu'on ne
+   voit plus. */
+document.addEventListener("visibilitychange", function () {
+  T.pause = document.visibilityState !== "visible";
+  if (!T.pause) { S.dernierEtat = maintenant(); garderEcran(); }
+});
+
+function recevoirTexte(txt) {
+  T.rx += txt;
+  var k;
+  while ((k = T.rx.indexOf("\n")) >= 0) {
+    var l = T.rx.slice(0, k).replace(/\r$/, "");
+    T.rx = T.rx.slice(k + 1);
+    if (l) ligneRecue(l);
+  }
+  if (T.rx.length > 200) T.rx = "";
+}
+
+/* La carte annonce combien de voies sont cablees. On masque les curseurs en
+   trop et l'ecran repartit ses barres sur les voies restantes. La trame
+   d'etat, elle, garde toujours ses dix emplacements. */
+function reglerNbVoies(n) {
+  if (!(n >= 1 && n <= NB)) return;
+  var change = n !== S.nbVoies;
+  S.nbVoies = n;
+  document.querySelectorAll(".voie").forEach(function (v, i) { v.hidden = i >= n; });
+  $("#bandeau").style.gridTemplateColumns = "repeat(" + n + ", minmax(0, 1fr))";
+  $("#modele").textContent = "Pupitre · " + n + (n > 1 ? " voies" : " voie");
+  if (S.rVoie >= n) S.rVoie = 0;
+  for (var i = n; i < NB; i++) if (S.cran[i]) poserCran(i, 0, true);
+  try { localStorage.setItem("cartoloco-nbvoies", String(n)); } catch (e) {}
+  if (change) { graduer(); message(n + (n > 1 ? " VOIES CABLEES" : " VOIE CABLEE"), 2200); }
+  aRedessiner = true;
+}
+
+function ligneRecue(l) {
+  if (l[0] === "N" && /^N\d{1,2}$/.test(l)) { reglerNbVoies(parseInt(l.slice(1), 10)); return; }
+  if (l[0] === "E" && l.length === 17) { etatRecu(l); return; }
+  if (l[0] === "!") { evenement(l.slice(1)); return; }
+  if (l === "R") { remettreAZero(); message("CARTE REDEMARREE", 3000); }
+}
+
+function etatRecu(l) {
+  /* Une notification en retard, arrivee apres une coupure, ne doit pas
+     relever des curseurs que la carte a deja remis a zero. */
+  if (!lienActif()) return;
+  S.dernierEtat = maintenant();
+  if (S.muette) { S.muette = false; message("CARTE DE RETOUR", 2000); }
+  var crans = [];
+  for (var i = 0; i < NB; i++) {
+    var v = l.charCodeAt(1 + i) - 65 - CR;
+    if (v < -CR || v > CR) return;              // trame abimee : on l'ignore
+    crans.push(v);
+  }
+  var t = maintenant();
+  for (i = 0; i < NB; i++) {
+    if (tenus.has(i) || t - toucheT[i] < 700) continue;
+    if (crans[i] !== S.cran[i]) {
+      if (crans[i] && S.cran[i] && Math.sign(crans[i]) !== Math.sign(S.cran[i]))
+        message("VOIE " + (i + 1) + " DEMI-TOUR", 1800);
+      poserCran(i, crans[i], true);
+    }
+  }
+  var m = parseInt(l.substr(11, 3), 16);
+  if (!isNaN(m)) {
+    for (i = 0; i < NB; i++)
+      if (((m >> i) & 1) && !((S.butees >> i) & 1)) { message("BUTEE VOIE " + (i + 1), 2600); vibrer(40); }
+    S.butees = m;
+  }
+  S.lum = l[14] === "1";
+  S.vol = Math.max(0, Math.min(9, l.charCodeAt(15) - 48));
+  S.aSauver = l[16] === "*";
+  majVoyants(); majVolet();
+  aRedessiner = true;
+}
+
+function evenement(e) {
+  if (e === "ARRET") message("ARRET D'URGENCE", 3000, true);
+  else if (e === "LIEN") { remettreAZero(); message("LIAISON ETABLIE", 2400); }
+  else if (e === "ENREGISTRE") message("REGLAGES ENREGISTRES", 2600);
+  else if (/^FDC\d+$/.test(e)) {
+    /* Fin de course jamais vue fermee : la carte l'ignore (interrupteur pas
+       encore cable, ou fil coupe). La voie roule normalement, sans butee. */
+    message("FDC " + e.slice(3) + " NON CABLEE : IGNOREE", 4500, true);
+    vibrer([60, 40, 60]);
+  }
+  else if (/^BUTEE\d+$/.test(e)) {
+    /* fin de course armee et ouverte : la voie est en butee, un seul sens */
+    message("VOIE " + e.slice(5) + " EN BUTEE", 4500, true);
+    vibrer([60, 40, 60]);
+  }
+}
+
+function remettreAZero() {
+  for (var i = 0; i < NB; i++) poserCran(i, 0, true);
+}
+
+/* ========================================================================
+   BLUETOOTH -- HM-10 / AT-09 / JDY (0xFFE0 / 0xFFE1), ou Nordic UART.
+   ===================================================================== */
+var HM10_SVC = 0xffe0, HM10_CAR = 0xffe1;
+var NUS_SVC = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
+var NUS_RX  = "6e400002-b5a3-f393-e0a9-e50e24dcca9e";   // on y ecrit
+var NUS_TX  = "6e400003-b5a3-f393-e0a9-e50e24dcca9e";   // il nous notifie
+var B = { appareil: null, ecr: null, notif: null, sansReponse: false };
+var decodeur = new TextDecoder(), encodeur = new TextEncoder();
+
+async function transmettre(paquet) {
+  if (T.mode === "demo") { SIM.recevoir(paquet); return; }
+  if (T.mode !== "ble" || !B.ecr) throw new Error("hors ligne");
+  var d = encodeur.encode(paquet);
+  if (B.sansReponse) await B.ecr.writeValueWithoutResponse(d);
+  else await B.ecr.writeValue(d);
+}
+
+async function connecter() {
+  if (!navigator.bluetooth) {
+    message("PAS DE BLUETOOTH ICI", 3500, true);
+    proposerDemo(); return;
+  }
+  arreterDemo();
+  S.lien = "connexion"; majVoyants(); message("CHOISIS LE MODULE", 6000);
+  try {
+    B.appareil = await navigator.bluetooth.requestDevice({
+      acceptAllDevices: true, optionalServices: [HM10_SVC, NUS_SVC]
+    });
+    B.appareil.addEventListener("gattserverdisconnected", surDeconnexion);
+    await ouvrirGatt();
+    T.mode = "ble"; S.lien = "on"; S.dernierEtat = maintenant(); majVoyants();
+    garderEcran();
+    message("CONNECTE : " + (B.appareil.name || "MODULE").toUpperCase().slice(0, 18), 2600);
+    envoyer("?");
+  } catch (e) {
+    S.lien = "off"; majVoyants();
+    if (e && e.name === "NotFoundError") message("AUCUN MODULE CHOISI", 2600);
+    else if (e && (e.name === "SecurityError" || e.name === "NotAllowedError")) { message("BLUETOOTH REFUSE ICI", 3500, true); proposerDemo(); }
+    else message("ECHEC : MODULE MUET ?", 3500, true);
+  }
+}
+
+async function ouvrirGatt() {
+  var serveur = await B.appareil.gatt.connect();
+  var svc;
+  try {
+    svc = await serveur.getPrimaryService(HM10_SVC);
+    B.ecr = B.notif = await svc.getCharacteristic(HM10_CAR);
+  } catch (e) {
+    svc = await serveur.getPrimaryService(NUS_SVC);
+    B.ecr = await svc.getCharacteristic(NUS_RX);
+    B.notif = await svc.getCharacteristic(NUS_TX);
+  }
+  B.sansReponse = !!B.ecr.properties.writeWithoutResponse;
+  /* TOUJOURS la meme fonction : apres une reconnexion, Chrome rend souvent
+     la meme caracteristique, et un second ecouteur ferait lire chaque trame
+     deux fois. Le navigateur ignore un ecouteur deja inscrit. */
+  B.notif.addEventListener("characteristicvaluechanged", surNotification);
+  await B.notif.startNotifications();
+}
+
+function surNotification(ev) {
+  recevoirTexte(decodeur.decode(ev.target.value));
+}
+
+function surDeconnexion() {
+  T.rx = "";                           // une ligne a moitie recue est perdue
+  if (T.mode !== "ble") return;
+  S.lien = "perdu"; majVoyants();
+  remettreAZero();                     // la carte, elle, s'arrete d'elle-meme
+  message("LIAISON PERDUE", 1e9, true);
+  vibrer([80, 60, 80]);
+  reconnecter();
+}
+
+async function reconnecter() {
+  for (var k = 1; k <= 5 && S.lien === "perdu"; k++) {
+    await new Promise(function (r) { setTimeout(r, 1200 * k); });
+    if (S.lien !== "perdu") return;
+    try {
+      await ouvrirGatt();
+      S.lien = "on"; S.dernierEtat = maintenant(); majVoyants(); message("RECONNECTE", 2400); envoyer("?");
+      return;
+    } catch (e) {}
+  }
+  if (S.lien === "perdu") message("PERDU : APPUIE SUR BT", 1e9, true);
+}
+
+function deconnecter() {
+  if (T.mode === "demo") { arreterDemo(); return; }
+  T.mode = "aucun"; S.lien = "off";
+  try { if (B.appareil && B.appareil.gatt.connected) B.appareil.gatt.disconnect(); } catch (e) {}
+  remettreAZero(); majVoyants(); message("DECONNECTE", 2400);
+}
+
+var verrouEcran = null;
+async function garderEcran() {
+  try {
+    if ("wakeLock" in navigator && document.visibilityState === "visible" && lienActif())
+      verrouEcran = await navigator.wakeLock.request("screen");
+  } catch (e) {}
+}
+
+/* ========================================================================
+   DEMO -- une carte simulee, avec le meme protocole. Voie 1 en navette,
+   voie 2 qui finit en butee, pour voir tout ce que l'ecran sait dire.
+   ===================================================================== */
+var SIM = {
+  actif: false, cran: new Array(NB).fill(0), lum: 0, vol: 6, aSauver: false,
+  butees: 0, coteBut: new Array(NB).fill(0), course: new Array(NB).fill(0), rx: "", minuterie: null,
+  recevoir: function (p) {
+    this.rx += p; var k;
+    while ((k = this.rx.indexOf("\n")) >= 0) { var l = this.rx.slice(0, k); this.rx = this.rx.slice(k + 1); if (l) this.commande(l); }
+  },
+  commande: function (l) {
+    var a, n, c;
+    switch (l[0]) {
+      case "V": a = l.slice(1).split(","); n = +a[0]; c = Math.max(-CR, Math.min(CR, +a[1] || 0));
+        if (n >= 1 && n <= NB) this.cran[n - 1] = c; break;
+      case "S": this.cran.fill(0); this.emettre("!ARRET"); break;
+      case "L": this.lum = l[1] === "1" ? 1 : 0; break;
+      case "W": this.vol = Math.max(0, Math.min(9, +l.slice(1) || 0)); break;
+      case "T": case "Z": this.aSauver = true; break;
+      case "K": this.aSauver = false; this.emettre("!ENREGISTRE"); break;
+      case "?": this.etat(); break;
+    }
+  },
+  emettre: function (l) { setTimeout(function () { ligneRecue(l); }, 30); },
+  etat: function () {
+    var t = "E";
+    for (var i = 0; i < NB; i++) t += String.fromCharCode(65 + this.cran[i] + CR);
+    t += ("000" + this.butees.toString(16).toUpperCase()).slice(-3);
+    t += this.lum ? "1" : "0"; t += String(this.vol); t += this.aSauver ? "*" : ".";
+    this.emettre(t);
+  },
+  pas: function () {
+    // voie 1 : navette, demi-tour toutes les 4 s de marche
+    if (this.cran[0]) { this.course[0] += 250; if (this.course[0] >= 4000) { this.course[0] = 0; this.cran[0] = -this.cran[0]; } }
+    // voie 2 : finit en butee apres 6 s de marche ; l'autre sens la libere
+    var c = this.cran[1];
+    if (this.butees & 2) {
+      if (c && Math.sign(c) !== this.coteBut[1]) { this.course[1] += 250; if (this.course[1] > 1000) { this.butees &= ~2; this.course[1] = 0; } }
+    } else if (c) {
+      this.course[1] += 250;
+      if (this.course[1] >= 6000) { this.butees |= 2; this.coteBut[1] = Math.sign(c); this.cran[1] = 0; this.course[1] = 0; }
+    }
+    if (this.butees & 2 && c && Math.sign(c) === this.coteBut[1]) this.cran[1] = 0;
+    this.etat();
+  }
+};
+
+function demarrerDemo() {
+  fermerVolet();
+  T.mode = "demo"; S.lien = "demo"; SIM.actif = true;
+  SIM.cran.fill(0); SIM.butees = 0; SIM.course.fill(0); SIM.lum = 1; SIM.vol = 6;
+  clearInterval(SIM.minuterie);
+  SIM.minuterie = setInterval(function () { SIM.pas(); }, 250);
+  remettreAZero();
+  majVoyants();
+  garderEcran();
+  // un instant de jeu deja en cours, pour que l'ecran ait quelque chose a dire
+  [[0, 12], [1, 9], [2, -8], [4, 18], [7, 5], [9, -14]].forEach(function (p) {
+    if (p[0] >= S.nbVoies) return;              // voie non cablee : rien
+    SIM.cran[p[0]] = p[1]; poserCran(p[0], p[1], true);
+  });
+  S.lum = true;
+  message("MODE DEMO : PAS DE CARTE", 3200);
+}
+function arreterDemo() {
+  if (T.mode !== "demo") return;
+  clearInterval(SIM.minuterie); SIM.actif = false;
+  T.mode = "aucun"; S.lien = "off"; remettreAZero(); majVoyants();
+  message("DEMO TERMINEE", 2000);
+}
+function proposerDemo() { setTimeout(function () { message("REGL. > MODE DEMO", 4000); }, 3600); }
+
+/* ========================================================================
+   CURSEURS -- une zone d'arret de 7 px au centre, comme un cran : le
+   curseur s'y colle, et le telephone vibre en y entrant. Hors de cette
+   zone, la course restante se partage en vingt crans, donc le cran 1 (la
+   vitesse la plus lente, celle qui compte) reste atteignable.
+   ===================================================================== */
+var MORT_PX = 7;
+var fentes = [];
+
+function construireVoies() {
+  var b = $("#bandeau");
+  for (var i = 0; i < NB; i++) {
+    var v = document.createElement("div");
+    v.className = "voie";
+    v.innerHTML =
+      '<span class="num">' + (i + 1) + '</span>' +
+      '<span class="sens">AV</span>' +
+      '<div class="fente anim" role="slider" tabindex="0" aria-orientation="vertical"' +
+      ' aria-label="Voie ' + (i + 1) + '" aria-valuemin="-20" aria-valuemax="20" aria-valuenow="0">' +
+      '<div class="graduation"></div><div class="curseur"></div></div>' +
+      '<span class="sens">AR</span>';
+    b.appendChild(v);
+    var f = v.querySelector(".fente");
+    f.dataset.i = i;
+    fentes.push(f);
+    brancherFente(f, i);
+  }
+  graduer();
+  new ResizeObserver(graduer).observe(b);
+}
+
+/* hauteur du curseur, qui varie avec la largeur des voies */
+function hCurseur(f) { var c = f.querySelector(".curseur"); return (c && c.offsetHeight) || 26; }
+function demiCourse(f) { return Math.max(20, (f.clientHeight - hCurseur(f)) / 2); }
+
+function pPourCran(f, v) {
+  if (!v) return 0;
+  var mort = MORT_PX / demiCourse(f);
+  return Math.sign(v) * (mort + (Math.abs(v) - 0.5) / CR * (1 - mort));
+}
+function cranPourP(f, p) {
+  var mort = MORT_PX / demiCourse(f), a = Math.abs(p);
+  if (a < mort) return 0;
+  var k = Math.ceil((a - mort) / (1 - mort) * CR);
+  return Math.sign(p) * Math.max(1, Math.min(CR, k));
+}
+
+function graduer() {
+  fentes.forEach(function (f) {
+    var g = f.querySelector(".graduation"), h = "";
+    [-20, -10, 0, 10, 20].forEach(function (v) {
+      var p = v === 0 ? 0 : pPourCran(f, v);
+      var hc = hCurseur(f), y = hc / 2 + (1 - p) / 2 * (f.clientHeight - hc);
+      h += '<i class="' + (v === 0 ? "zero" : "") + '" style="top:' + y.toFixed(1) + 'px"></i>';
+    });
+    g.innerHTML = h;
+  });
+  for (var i = 0; i < NB; i++) placerCurseur(i);
+}
+
+function placerCurseur(i) {
+  var f = fentes[i];
+  var p = pPourCran(f, S.cran[i]);
+  f.style.setProperty("--t", ((1 - p) / 2).toFixed(4));
+  f.setAttribute("aria-valuenow", S.cran[i]);
+  f.setAttribute("aria-valuetext", S.cran[i] === 0 ? "arrêt" : (S.cran[i] > 0 ? "avant " : "arrière ") + Math.abs(S.cran[i]));
+}
+
+function poserCran(i, v, anime) {
+  v = Math.max(-CR, Math.min(CR, v | 0));
+  var avant = S.cran[i];
+  S.cran[i] = v;
+  if (v) S.cote[i] = Math.sign(v);
+  fentes[i].classList.toggle("anim", !!anime);
+  placerCurseur(i);
+  if ((avant === 0) !== (v === 0) && !anime) vibrer(v === 0 ? 14 : 6);
+  aRedessiner = true;
+}
+
+function commanderCran(i, v) {
+  if (v === S.cran[i]) return;
+  poserCran(i, v, false);
+  toucheT[i] = maintenant();
+  S.touchee = i; S.toucheeT = toucheT[i];
+  document.querySelectorAll(".voie .num").forEach(function (n, k) { n.classList.toggle("touchee", k === i); });
+  envoyer("V" + (i + 1) + "," + v, "V" + (i + 1));
+}
+
+function brancherFente(f, i) {
+  function depuisPointeur(ev) {
+    var r = f.getBoundingClientRect();
+    var p = ((r.top + r.height / 2) - ev.clientY) / demiCourse(f);
+    return cranPourP(f, Math.max(-1, Math.min(1, p)));
+  }
+  var dernierAppui = 0;
+  f.addEventListener("pointerdown", function (ev) {
+    var t = maintenant();
+    if (t - dernierAppui < 320) {           // double-tape : retour au centre
+      dernierAppui = 0; commanderCran(i, 0); return;
+    }
+    dernierAppui = t;
+    f.setPointerCapture(ev.pointerId);
+    tenus.add(i); f.classList.add("saisie");
+    commanderCran(i, depuisPointeur(ev));
+  });
+  f.addEventListener("pointermove", function (ev) {
+    if (!tenus.has(i)) return;
+    commanderCran(i, depuisPointeur(ev));
+  });
+  function lacher() {
+    tenus.delete(i); f.classList.remove("saisie");
+    if (!lienActif() && S.cran[i] !== 0) {
+      message(S.lien === "perdu" ? "LIAISON PERDUE" : "PAS CONNECTE : BT", 2200, S.lien === "perdu");
+      poserCran(i, 0, true);
+    }
+  }
+  f.addEventListener("pointerup", lacher);
+  f.addEventListener("pointercancel", lacher);
+  f.addEventListener("keydown", function (ev) {
+    var v = S.cran[i], k = ev.key;
+    if (k === "ArrowUp") v++; else if (k === "ArrowDown") v--;
+    else if (k === "PageUp") v += 5; else if (k === "PageDown") v -= 5;
+    else if (k === "Home") v = CR; else if (k === "End") v = -CR;
+    else if (k === "0" || k === "Delete" || k === "Backspace") v = 0;
+    else return;
+    ev.preventDefault();
+    commanderCran(i, Math.max(-CR, Math.min(CR, v)));
+  });
+}
+
+/* ========================================================================
+   TOUCHES
+   ===================================================================== */
+function brancher(sel, fn) { var e = $(sel); if (e) e.addEventListener("click", fn); }
+
+/* ========================================================================
+   SONS : correspondance numero -> nom, et la molette
+   La ligne k de la liste nomme le fichier /MP3/000k.mp3 de la carte SD.
+   Le son 1 est le son d'accueil : la carte le joue seule a la mise sous
+   tension, la molette le saute et ne propose que les sons 2 et suivants.
+   Ces noms par defaut sont des EXEMPLES : remplace-les par les tiens, ici
+   ou dans REGL. (ce qui est saisi dans REGL. l'emporte et reste sur le
+   telephone).
+   ===================================================================== */
+var SON_ACCUEIL = 1;          // joue par la carte au demarrage, hors molette
+var SONS_PAR_DEFAUT = [
+  "Accueil (démarrage)",
+  "Sifflet vapeur", "Klaxon diesel", "Annonce en gare", "Cloche de passage à niveau",
+  "Départ du train", "Freinage", "Ambiance de gare", "Orage", "Oiseaux"
+];
+var nomsSons = SONS_PAR_DEFAUT.slice();
+try {
+  var memoNoms = localStorage.getItem("cartoloco-noms-sons");
+  if (memoNoms) nomsSons = lireNoms(memoNoms);
+} catch (e) {}
+function lireNoms(txt) {
+  var l = txt.split("\n").map(function (x) { return x.trim(); });
+  while (l.length && !l[l.length - 1]) l.pop();             // lignes vides de fin
+  l = l.slice(0, 99);                                         // la carte en accepte 99
+  return l.length ? l.map(function (x, k) { return x || ("Son " + (k + 1)); }) : ["Son 1"];
+}
+function nomSon(k) { return nomsSons[k] || ("Son " + (k + 1)); }
+
+/* S.sonChoisi : indice dans nomsSons (fichier = indice + 1), jamais l'accueil */
+var PREMIER_CHOIX = SON_ACCUEIL;     // indice 1 = fichier 0002.mp3
+S.sonChoisi = PREMIER_CHOIX;
+function nbChoix() { return nomsSons.length - PREMIER_CHOIX; }
+var mol = $("#molette"), molCorps = $("#moletteCorps");
+var CRAN_DEG = 30, angleMol = 0;
+
+function majMolette() {
+  molCorps.style.setProperty("--a", angleMol + "deg");
+  mol.setAttribute("aria-valuemin", PREMIER_CHOIX + 1);
+  mol.setAttribute("aria-valuemax", Math.max(PREMIER_CHOIX + 1, nomsSons.length));
+  mol.setAttribute("aria-valuenow", S.sonChoisi + 1);
+  mol.setAttribute("aria-valuetext", (S.sonChoisi + 1) + " : " + nomSon(S.sonChoisi));
+}
+function choisirSon(d) {
+  var m = nbChoix();
+  if (m < 1) { message("AUCUN SON : VOIR REGL.", 2600); return; }
+  var k = S.sonChoisi - PREMIER_CHOIX;
+  S.sonChoisi = PREMIER_CHOIX + ((k + d) % m + m) % m;
+  angleMol += d * CRAN_DEG;
+  majMolette();
+  vibrer(8);                                    // un cran sous le doigt
+  message(("0" + (S.sonChoisi + 1)).slice(-2) + " " + nomSon(S.sonChoisi), 3000);
+}
+function jouerChoisi() {
+  if (nbChoix() < 1) { message("AUCUN SON : VOIR REGL.", 2600); return; }
+  var k = S.sonChoisi + 1;
+  if (!envoyer("M" + k, "M")) { message("PAS CONNECTE : BT", 2200); return; }
+  S.son = k;
+  vibrer([18, 50, 18]);
+  message("LECTURE : " + nomSon(S.sonChoisi), 2600);
+}
+
+(function () {
+  var actif = false, angleDepart = 0, cumul = 0, rotationGeste = 0, dernierTap = 0;
+  function angle(ev) {
+    var r = mol.getBoundingClientRect();
+    return Math.atan2(ev.clientY - (r.top + r.height / 2), ev.clientX - (r.left + r.width / 2)) * 180 / Math.PI;
+  }
+  mol.addEventListener("pointerdown", function (ev) {
+    mol.setPointerCapture(ev.pointerId);
+    actif = true; angleDepart = angle(ev); cumul = 0; rotationGeste = 0;
+    mol.classList.add("saisie");
+  });
+  mol.addEventListener("pointermove", function (ev) {
+    if (!actif) return;
+    var a = angle(ev), d = a - angleDepart;
+    if (d > 180) d -= 360; else if (d < -180) d += 360;   // passage de -180 a +180
+    angleDepart = a; cumul += d; rotationGeste += Math.abs(d);
+    while (cumul >= CRAN_DEG)  { cumul -= CRAN_DEG; choisirSon(1); }
+    while (cumul <= -CRAN_DEG) { cumul += CRAN_DEG; choisirSon(-1); }
+  });
+  function lacher() {
+    if (!actif) return;
+    actif = false; mol.classList.remove("saisie");
+    if (rotationGeste > 12) { dernierTap = 0; return; }   // c'etait une rotation
+    var t = maintenant();
+    if (t - dernierTap < 380) { dernierTap = 0; jouerChoisi(); }
+    else {
+      dernierTap = t;
+      message(("0" + (S.sonChoisi + 1)).slice(-2) + " " + nomSon(S.sonChoisi), 2000);
+    }
+  }
+  mol.addEventListener("pointerup", lacher);
+  mol.addEventListener("pointercancel", lacher);
+  mol.addEventListener("keydown", function (ev) {
+    if (ev.key === "ArrowRight" || ev.key === "ArrowUp") { ev.preventDefault(); choisirSon(1); }
+    else if (ev.key === "ArrowLeft" || ev.key === "ArrowDown") { ev.preventDefault(); choisirSon(-1); }
+    else if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); jouerChoisi(); }
+  });
+})();
+
+/* liste des noms, modifiable dans REGL. */
+var champNoms = $("#nomsSons");
+champNoms.value = nomsSons.join("\n");
+champNoms.addEventListener("input", function () {
+  nomsSons = lireNoms(champNoms.value);
+  if (S.sonChoisi >= nomsSons.length || S.sonChoisi < PREMIER_CHOIX) S.sonChoisi = PREMIER_CHOIX;
+  try { localStorage.setItem("cartoloco-noms-sons", champNoms.value); } catch (e) {}
+  majMolette();
+});
+majMolette();
+
+brancher("#sonStop", function () { if (envoyer("M0", "M")) { S.son = 0; message("SON COUPE", 1600); } });
+brancher("#volMoins", function () { volume(-1); });
+brancher("#volPlus", function () { volume(1); });
+function volume(d) {
+  var n = Math.max(0, Math.min(9, S.vol + d));
+  if (!envoyer("W" + n, "W")) { message("PAS CONNECTE : BT", 2200); return; }
+  S.vol = n; message("VOLUME " + n, 1500);
+}
+
+brancher("#arret", function () {
+  remettreAZero();
+  vibrer(70);
+  if (lienActif()) envoyerUrgent("S");
+  message("ARRET D'URGENCE", 3000, true);
+});
+brancher("#bt", function () {
+  if (S.lien === "on") { message("CONNECTE : " + ((B.appareil && B.appareil.name) || "MODULE").toUpperCase().slice(0, 18), 2200); return; }
+  connecter();
+});
+brancher("#lum", function () {
+  if (!envoyer(S.lum ? "L0" : "L1", "L")) { message("PAS CONNECTE : BT", 2200); return; }
+  S.lum = !S.lum; majVoyants(); message(S.lum ? "ECLAIRAGE ALLUME" : "ECLAIRAGE ETEINT", 1600);
+});
+brancher("#plein", async function () {
+  try {
+    if (!document.fullscreenElement) {
+      await document.documentElement.requestFullscreen({ navigationUI: "hide" });
+      try { await screen.orientation.lock("landscape"); } catch (e) {}
+    } else await document.exitFullscreen();
+  } catch (e) { message("PLEIN ECRAN REFUSE", 2200); }
+});
+
+/* ---- volet de reglages ---- */
+brancher("#regl", function () { $("#volet").hidden = false; majVolet(); $("#fermer").focus(); });
+brancher("#fermer", fermerVolet);
+function fermerVolet() { $("#volet").hidden = true; }
+document.addEventListener("keydown", function (e) { if (e.key === "Escape") fermerVolet(); });
+brancher("#demo", function () { if (T.mode === "demo") arreterDemo(); else demarrerDemo(); majVolet(); });
+brancher("#deco", function () { deconnecter(); majVolet(); });
+brancher("#enregistrer", function () {
+  if (!envoyer("K")) { message("PAS CONNECTE : BT", 2200); return; }
+  memoriser();
+});
+document.querySelectorAll("[data-rvoie]").forEach(function (b) {
+  b.addEventListener("click", function () { S.rVoie = (S.rVoie + +b.dataset.rvoie + S.nbVoies) % S.nbVoies; majVolet(); });
+});
+document.querySelectorAll("[data-trim]").forEach(function (b) {
+  b.addEventListener("click", function () {
+    var i = S.rVoie, v = Math.max(-60, Math.min(60, S.trim[i] + +b.dataset.trim));
+    if (!envoyer("T" + (i + 1) + "," + v, "T" + (i + 1))) { message("PAS CONNECTE : BT", 2200); return; }
+    S.trim[i] = v; memoriser(); majVolet();
+  });
+});
+document.querySelectorAll("[data-zone]").forEach(function (b) {
+  b.addEventListener("click", function () {
+    var v = Math.max(10, Math.min(150, S.zone + +b.dataset.zone));
+    if (!envoyer("Z" + v, "Z")) { message("PAS CONNECTE : BT", 2200); return; }
+    S.zone = v; memoriser(); majVolet();
+  });
+});
+function majVolet() {
+  $("#rVoie").textContent = S.rVoie + 1;
+  var t = S.trim[S.rVoie];
+  $("#rTrim").textContent = (t > 0 ? "+" : "") + t + " µs";
+  $("#rZone").textContent = S.zone + " µs";
+  var n = $("#noteSauve");
+  n.textContent = !lienActif() ? "Pas de carte connectée : les réglages ne partiront pas."
+    : S.aSauver ? "Modifié, pas encore enregistré : sans « Enregistrer », la carte l'oubliera au prochain allumage."
+    : "Tout est enregistré dans la carte.";
+  n.classList.toggle("alerte", lienActif() && S.aSauver);
+  $("#demo").textContent = T.mode === "demo" ? "Quitter la démo" : "Mode démo";
+}
+
+function majVoyants() {
+  var l = $("#ledLien"), b = $("#ledBt"), u = $("#ledLum");
+  [l, b].forEach(function (e) {
+    e.className = "led" + (S.lien === "on" || S.lien === "demo" ? " vert"
+      : S.lien === "connexion" ? " ambre clignote" : S.lien === "perdu" ? " ambre clignote" : "");
+  });
+  u.className = "led" + (S.lum ? " ambre" : "");
+}
+
+/* ========================================================================
+   ECRAN LCD -- 192 x 112 points, le double et demi d'un 3310, avec son
+   ombre portee caracteristique : chaque point lit allume aussi, un cran
+   en dessous et a droite, le fond de la dalle.
+   ===================================================================== */
+var W = 192, H = 112, P = 4, D = 3;
+var fb = new Uint8Array(W * H);
+var cv = $("#lcd"), cx = cv.getContext("2d");
+var grille = document.createElement("canvas");
+grille.width = cv.width; grille.height = cv.height;
+(function () {
+  var g = grille.getContext("2d");
+  g.fillStyle = "rgba(31,42,22,0.07)";
+  g.beginPath();
+  for (var y = 0; y < H; y++) for (var x = 0; x < W; x++) g.rect(x * P, y * P, D, D);
+  g.fill();
+})();
+
+/* Police 5 x 7, une rangee par octet, bit 4 a gauche. */
+var F = {
+  "A":[14,17,17,31,17,17,17],"B":[30,17,17,30,17,17,30],"C":[14,17,16,16,16,17,14],
+  "D":[28,18,17,17,17,18,28],"E":[31,16,16,30,16,16,31],"F":[31,16,16,30,16,16,16],
+  "G":[14,17,16,23,17,17,15],"H":[17,17,17,31,17,17,17],"I":[14,4,4,4,4,4,14],
+  "J":[7,2,2,2,2,18,12],"K":[17,18,20,24,20,18,17],"L":[16,16,16,16,16,16,31],
+  "M":[17,27,21,21,17,17,17],"N":[17,17,25,21,19,17,17],"O":[14,17,17,17,17,17,14],
+  "P":[30,17,17,30,16,16,16],"Q":[14,17,17,17,21,18,13],"R":[30,17,17,30,20,18,17],
+  "S":[15,16,16,14,1,1,30],"T":[31,4,4,4,4,4,4],"U":[17,17,17,17,17,17,14],
+  "V":[17,17,17,17,17,10,4],"W":[17,17,17,21,21,21,10],"X":[17,17,10,4,10,17,17],
+  "Y":[17,17,10,4,4,4,4],"Z":[31,1,2,4,8,16,31],
+  "0":[14,17,19,21,25,17,14],"1":[4,12,4,4,4,4,14],"2":[14,17,1,2,4,8,31],
+  "3":[31,2,4,2,1,17,14],"4":[2,6,10,18,31,2,2],"5":[31,16,30,1,1,17,14],
+  "6":[6,8,16,30,17,17,14],"7":[31,1,2,4,8,8,8],"8":[14,17,17,14,17,17,14],
+  "9":[14,17,17,15,1,2,12],
+  " ":[0,0,0,0,0,0,0],"-":[0,0,0,31,0,0,0],"+":[0,4,4,31,4,4,0],":":[0,12,12,0,12,12,0],
+  ".":[0,0,0,0,0,12,12],"*":[0,4,21,14,21,4,0],"!":[4,4,4,4,4,0,4],"/":[0,1,2,4,8,16,0],
+  ">":[8,4,2,1,2,4,8],"<":[2,4,8,16,8,4,2],"'":[4,4,8,0,0,0,0],",":[0,0,0,0,12,4,8]
+};
+var AMPOULE = [14,17,17,17,10,14,14];
+/* Chiffres 3 x 5 pour les numeros de voie, sous les barres. */
+var C3 = ["111101101101111","010110010010111","111001111100111","111001111001111","101101111001001",
+          "111100111001111","111100111101111","111001001001001","111101111101111","111101111001111"];
+
+function pt(x, y, v) { if (x >= 0 && y >= 0 && x < W && y < H) fb[y * W + x] = v === undefined ? 1 : v; }
+function pave(x, y, w, h, v) { for (var j = 0; j < h; j++) for (var i = 0; i < w; i++) pt(x + i, y + j, v); }
+function glyphe(x, y, rangs, v) {
+  for (var j = 0; j < 7; j++) for (var i = 0; i < 5; i++) if ((rangs[j] >> (4 - i)) & 1) pt(x + i, y + j, v);
+}
+function texte(x, y, s, v) {
+  s = String(s).normalize("NFD").replace(/[̀-ͯ]/g, "").toUpperCase();
+  for (var k = 0; k < s.length; k++) glyphe(x + k * 6, y, F[s[k]] || F[" "], v);
+}
+function largeur(s) { return String(s).length * 6 - 1; }
+function petitsChiffres(x, y, n) {
+  var s = String(n);
+  for (var k = 0; k < s.length; k++) {
+    var m = C3[+s[k]];
+    for (var j = 0; j < 5; j++) for (var i = 0; i < 3; i++) if (m[j * 3 + i] === "1") pt(x + k * 4 + i, y + j);
+  }
+}
+
+var aRedessiner = true, dernierDessin = 0;
+
+function composer(t) {
+  fb.fill(0);
+  var cligne = Math.floor(t / 450) % 2 === 0;
+
+  /* -- barre d'etat : signal a gauche, comme sur un 3310 -- */
+  var niveau = (S.lien === "on" || S.lien === "demo") ? 4
+             : S.lien === "connexion" ? Math.floor(t / 280) % 5 : 0;
+  for (var k = 0; k < 4; k++) {
+    var h = 2 + k * 2;
+    if (k < niveau) pave(k * 3, 8 - h, 2, h);
+    else pt(k * 3, 7), pt(k * 3 + 1, 7);
+  }
+  var etiquette = S.lien === "demo" ? "DEMO" : S.lien === "on" ? "BLE"
+                : S.lien === "perdu" ? (cligne ? "!!" : "") : S.lien === "connexion" ? "..." : "--";
+  texte(15, 1, etiquette);
+  texte(Math.round((W - largeur("EXPRESS MINIATURES")) / 2), 1, "EXPRESS MINIATURES");
+  if (S.lum) glyphe(161, 1, AMPOULE);
+  texte(171, 1, "V" + S.vol);
+  if (S.aSauver) texte(186, 1, "*");
+  for (var x = 0; x < W; x += 2) pt(x, 10);
+
+  /* -- une barre signee par voie cablee : a dix voies, 12 points de large
+        au pas de 18 ; a cinq, 24 points au pas de 36 -- */
+  var Z0 = 50, AMP = 30, NV = S.nbVoies;
+  var PAS = Math.min(36, Math.floor(184 / NV)), LB = Math.min(24, PAS - 6);
+  var X0 = Math.round((W - (NV - 1) * PAS - LB) / 2);
+  for (x = 2; x < W - 2; x += 2) pt(x, Z0);
+  for (var i = 0; i < NV; i++) {
+    var x0 = X0 + i * PAS, v = S.cran[i], mil = x0 + Math.floor(LB / 2);
+    var hb = Math.round(Math.abs(v) / CR * AMP);
+    if (v > 0) pave(x0, Z0 - hb, LB, hb);
+    else if (v < 0) pave(x0, Z0 + 1, LB, hb);
+    // bornes de la plage, quatre points de coin
+    pt(x0, Z0 - AMP); pt(x0 + LB - 1, Z0 - AMP); pt(x0, Z0 + AMP); pt(x0 + LB - 1, Z0 + AMP);
+    // butee verrouillee : un triangle plein du cote atteint
+    if ((S.butees >> i) & 1) {
+      var haut = S.cote[i] > 0;
+      for (var r = 0; r < 4; r++) {
+        var yy = haut ? 13 + r : 87 - r;
+        pave(mil - 4 + r, yy, 8 - 2 * r, 1);
+      }
+    }
+    var n = i + 1, lx = mil - (n >= 10 ? 4 : 2);
+    petitsChiffres(lx, 90, n);
+    if (i === S.touchee && t - S.toucheeT < 3000) pave(mil - 4, 96, 8, 1);
+  }
+
+  /* -- ligne de message, en video inverse quand c'est une alarme -- */
+  var msg = "", alarme = false;
+  if (t < S.msgFin) { msg = S.msg; alarme = S.alarme; }
+  else if (S.lien === "off") msg = "APPUIE SUR BT";
+  else if (S.lien === "perdu") { msg = "LIAISON PERDUE"; alarme = true; }
+  else if (S.touchee >= 0 && t - S.toucheeT < 3000) {
+    var c = S.cran[S.touchee];
+    msg = "VOIE " + (S.touchee + 1) + "  " + (c === 0 ? "ARRET" : (c > 0 ? "AVANT " : "ARRIERE ") + Math.abs(c));
+  } else {
+    var roulent = S.cran.filter(function (v) { return v !== 0; }).length;
+    msg = roulent ? roulent + (roulent > 1 ? " VOIES EN ROUTE" : " VOIE EN ROUTE") : "PRET";
+  }
+  msg = msg.slice(0, 31);
+  var mx = Math.round((W - largeur(msg)) / 2);
+  if (alarme) {
+    if (cligne || S.lien !== "perdu") { pave(0, 101, W, 11); texte(mx, 103, msg, 0); }
+    else texte(mx, 103, msg);
+  } else texte(mx, 103, msg);
+}
+
+function rendre() {
+  cx.clearRect(0, 0, cv.width, cv.height);
+  cx.drawImage(grille, 0, 0);
+  cx.fillStyle = "rgba(31,42,22,0.22)";            // ombre portee des cristaux
+  cx.beginPath();
+  for (var y = 0; y < H; y++) for (var x = 0; x < W; x++) if (fb[y * W + x]) cx.rect(x * P + 1.5, y * P + 1.5, D, D);
+  cx.fill();
+  cx.fillStyle = "#1f2a16";
+  cx.beginPath();
+  for (y = 0; y < H; y++) for (x = 0; x < W; x++) if (fb[y * W + x]) cx.rect(x * P, y * P, D, D);
+  cx.fill();
+}
+
+/* La liaison GATT peut rester ouverte alors que plus rien ne passe. La carte,
+   elle, arrete alors tout au bout de 1,5 s : sans trame d'etat depuis 1,2 s
+   (cinq trames manquees),
+   on fait pareil a l'ecran plutot que d'afficher des curseurs mensongers. */
+function surveillerCarte(t) {
+  if (S.lien !== "on" || S.muette || T.pause) return;
+  if (t - S.dernierEtat > 1200) {
+    S.muette = true;
+    remettreAZero();
+    message("CARTE MUETTE : TOUT ARRETE", 1e9, true);
+    vibrer([80, 60, 80]);
+  }
+}
+
+function boucle(t) {
+  surveillerCarte(t);
+  var anime = S.lien === "connexion" || S.lien === "perdu" || t < S.msgFin + 50 ||
+              (S.touchee >= 0 && t - S.toucheeT < 3100);
+  if ((aRedessiner || anime) && t - dernierDessin > 66) {
+    composer(t); rendre(); aRedessiner = false; dernierDessin = t;
+  }
+  requestAnimationFrame(boucle);
+}
+
+/* ========================================================================
+   DEMARRAGE -- sur la vraie page, on attend le geste BT. Dans un cadre
+   ou le Bluetooth est absent (apercu, ordinateur sans BLE), la demo part
+   seule pour que la telecommande montre ce qu'elle sait faire.
+   ===================================================================== */
+construireVoies();
+var nbMemo = S.nbVoies; S.nbVoies = NB; reglerNbVoies(nbMemo);
+majVoyants();
+majVolet();
+var dansUnCadre = false;
+try { dansUnCadre = window.self !== window.top; } catch (e) { dansUnCadre = true; }
+if (!navigator.bluetooth || dansUnCadre) demarrerDemo();
+else message("APPUIE SUR BT", 1);
+requestAnimationFrame(boucle);
+
+})();
+</script>
+<script>
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(function () {});
+</script>
+</body>
+</html>
