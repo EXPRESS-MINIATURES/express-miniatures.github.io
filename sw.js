@@ -1,7 +1,7 @@
 /* Garde la page en memoire : la piece du reseau n'a pas forcement de Wi-Fi,
    et le Bluetooth, lui, n'en a pas besoin. On sert le cache d'abord, puis
    on le rafraichit en arriere-plan quand le reseau repond. */
-const CACHE = "express-miniatures-v10";
+const CACHE = "express-miniatures-v12";
 const FICHIERS = ["./", "index.html", "manifest.webmanifest", "icone-192.png", "icone-512.png", "icone-adaptative-512.png"];
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(FICHIERS)).then(() => self.skipWaiting()));
