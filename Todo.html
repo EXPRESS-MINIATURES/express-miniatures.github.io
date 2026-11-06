@@ -47,7 +47,6 @@
         }
     </script>
     <style>
-        /* Smooth transitions for item enter/exit */
         .task-item {
             transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         }
@@ -68,7 +67,6 @@
                 transform: translateY(0) scale(1);
             }
         }
-        /* Custom scrollbar for task container */
         .custom-scrollbar::-webkit-scrollbar {
             width: 6px;
         }
@@ -176,7 +174,7 @@
                             class="w-full pl-5 pr-28 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition text-slate-800 text-base md:text-lg font-medium resize-y min-h-[110px] custom-scrollbar"
                             autocomplete="off"
                         ></textarea>
-                        <div class="absolute right-2 top-3 flex items-center space-x-1 bg-slate-50/90 backdrop-blur-sm p-1.5 rounded-xl border border-slate-200/50 shadow-sm">
+                        <div class="absolute right-2 top-3 flex items-center space-x-1 bg-slate-50/90 backdrop-blur-sm p-1.5 rounded-xl border border-slate-200/50 shadow-sm z-10">
                             <label title="Joindre des fichiers" class="p-2.5 text-slate-400 hover:text-brand-600 hover:bg-slate-200/60 rounded-xl cursor-pointer transition flex items-center justify-center">
                                 <i data-lucide="paperclip" class="w-5 h-5"></i>
                                 <input type="file" id="form-file-input" multiple class="hidden">
@@ -184,7 +182,7 @@
                             <button 
                                 type="submit" 
                                 id="add-btn"
-                                class="p-2.5 bg-brand-600 hover:bg-brand-700 active:scale-95 text-white rounded-xl transition shadow-md shadow-brand-500/20 flex items-center justify-center"
+                                class="p-2.5 bg-brand-600 hover:bg-brand-700 active:scale-95 text-white rounded-xl transition shadow-md shadow-brand-500/20 flex items-center justify-center cursor-pointer"
                                 title="Ajouter la tâche"
                             >
                                 <i data-lucide="plus" class="w-5 h-5"></i>
@@ -440,14 +438,11 @@
             renderTodos();
         };
 
-        // Update Datalist & Select dropdowns for categories
         function updateCategoryOptions() {
             const categories = [...new Set(todos.map(t => t.category || 'Général'))].sort();
             
-            // Datalist for autocomplete in form
             categoriesDatalist.innerHTML = categories.map(c => `<option value="${escapeHtml(c)}"></option>`).join('');
 
-            // Select dropdown for filtering
             const currentSelected = categoryFilterSelect.value;
             categoryFilterSelect.innerHTML = `<option value="ALL">Toutes les sections (${todos.length})</option>` + 
                 categories.map(c => {
@@ -459,12 +454,10 @@
             currentCategoryFilter = categoryFilterSelect.value;
         }
 
-        // Render Todo Groups
         function renderTodos() {
             updateCategoryOptions();
             todoGroupsContainer.innerHTML = '';
 
-            // Filter Todos by status and selected section
             const filteredTodos = todos.filter(todo => {
                 const matchesStatus = currentFilter === 'all' || 
                                      (currentFilter === 'active' && !todo.completed) || 
@@ -482,7 +475,6 @@
                 emptyState.classList.add('hidden');
             }
 
-            // Group tasks by category
             const grouped = {};
             filteredTodos.forEach(todo => {
                 const cat = todo.category || 'Général';
@@ -490,7 +482,6 @@
                 grouped[cat].push(todo);
             });
 
-            // Render each group block
             Object.keys(grouped).sort().forEach(categoryName => {
                 const groupSection = document.createElement('div');
                 groupSection.className = 'bg-slate-50/70 border border-slate-200/80 rounded-2xl p-4 shadow-sm space-y-3';
@@ -520,8 +511,8 @@
                     const hasFiles = todo.files && todo.files.length > 0;
 
                     li.innerHTML = `
-                        <div class="flex items-start justify-between w-full">
-                            <div class="flex items-start space-x-3.5 flex-grow min-w-0 pr-2 pt-0.5">
+                        <div class="flex items-start justify-between w-full gap-3">
+                            <div class="flex items-start gap-2.5 flex-grow min-w-0 pr-1">
                                 <button 
                                     onclick="toggleTask('${todo.id}')"
                                     class="w-6 h-6 rounded-lg flex items-center justify-center transition border flex-shrink-0 mt-0.5 ${
@@ -532,9 +523,7 @@
                                 >
                                     ${todo.completed ? '<i data-lucide="check" class="w-4 h-4 stroke-[3]"></i>' : ''}
                                 </button>
-                                <div class="whitespace-pre-wrap break-words text-base md:text-lg text-slate-800 font-medium leading-relaxed w-full ${todo.completed ? 'line-through text-slate-400' : ''}">
-                                    ${escapeHtml(todo.text)}
-                                </div>
+                                <div class="whitespace-pre-wrap break-words text-base md:text-lg text-slate-800 font-medium leading-snug w-full text-left m-0 p-0 align-top ${todo.completed ? 'line-through text-slate-400' : ''}">${escapeHtml(todo.text)}</div>
                             </div>
                             
                             <div class="flex items-center space-x-1 opacity-90 sm:opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition flex-shrink-0">
@@ -595,44 +584,60 @@
             lucide.createIcons();
         }
 
-        window.quickAddSectionTask = function(sectionName) {
-            categoryInput.value = sectionName;
-            todoInput.focus();
-        };
+        function handleAddTodo() {
+            const text = todoInput.value.trim();
+            const category = categoryInput.value.trim() || 'Général';
 
-        function addTodo(text, category) {
-            const trimmedText = text.trim();
-            const trimmedCategory = category.trim() || 'Général';
-
-            if (!trimmedText && pendingFiles.length === 0) {
-                showError();
-                return;
+            if (!text && pendingFiles.length === 0) {
+                errorMsg.classList.remove('hidden');
+                return false;
             }
 
-            hideError();
+            errorMsg.classList.add('hidden');
 
             const newTodo = {
                 id: Date.now().toString(),
-                text: trimmedText || 'Tâche avec pièce(s) jointe(s)',
-                category: trimmedCategory,
+                text: text,
+                category: category,
                 completed: false,
                 files: [...pendingFiles],
-                createdAt: new Date()
+                createdAt: new Date().toISOString()
             };
 
-            todos.unshift(newTodo);
+            todos.push(newTodo);
             saveTodos();
-            
-            pendingFiles = [];
-            renderPendingFiles();
-            renderTodos();
 
             todoInput.value = '';
+            pendingFiles = [];
+            renderPendingFiles();
+
+            renderTodos();
+            showToast("Tâche ajoutée !");
+            return true;
         }
+
+        todoForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            handleAddTodo();
+        });
+
+        todoInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && e.shiftKey) {
+                e.preventDefault();
+                handleAddTodo();
+            }
+        });
+
+        window.quickAddSectionTask = function(categoryName) {
+            categoryInput.value = categoryName;
+            todoInput.focus();
+        };
 
         window.toggleTask = function(id) {
             todos = todos.map(todo => {
-                if (todo.id === id) return { ...todo, completed: !todo.completed };
+                if (todo.id === id) {
+                    return { ...todo, completed: !todo.completed };
+                }
                 return todo;
             });
             saveTodos();
@@ -640,80 +645,40 @@
         };
 
         window.deleteTask = function(id) {
-            const itemEl = document.querySelector(`[data-id="${id}"]`);
-            if (itemEl) {
-                itemEl.classList.add('removing');
+            const li = document.querySelector(`li[data-id="${id}"]`);
+            if (li) {
+                li.classList.add('removing');
                 setTimeout(() => {
                     todos = todos.filter(todo => todo.id !== id);
                     saveTodos();
                     renderTodos();
                 }, 250);
+            } else {
+                todos = todos.filter(todo => todo.id !== id);
+                saveTodos();
+                renderTodos();
             }
         };
 
         function updateStats() {
             const total = todos.length;
-            const completedCount = todos.filter(t => t.completed).length;
-            const activeCount = total - completedCount;
+            const completed = todos.filter(t => t.completed).length;
+            const active = total - completed;
 
-            remainingCount.textContent = `${activeCount} tâche${activeCount > 1 ? 's' : ''} restante${activeCount > 1 ? 's' : ''}`;
-            completionStats.textContent = `${completedCount}/${total}`;
+            completionStats.textContent = `${completed}/${total}`;
+            remainingCount.textContent = `${active} tâche${active > 1 ? 's' : ''} restante${active > 1 ? 's' : ''}`;
 
-            const progressPercentage = total === 0 ? 0 : Math.round((completedCount / total) * 100);
-            progressBar.style.width = `${progressPercentage}%`;
+            const percent = total === 0 ? 0 : Math.round((completed / total) * 100);
+            progressBar.style.width = `${percent}%`;
         }
-
-        function showError() {
-            errorMsg.classList.remove('hidden');
-            todoInput.classList.add('border-rose-400', 'bg-rose-50/30');
-        }
-
-        function hideError() {
-            errorMsg.classList.add('hidden');
-            todoInput.classList.remove('border-rose-400', 'bg-rose-50/30');
-        }
-
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-
-        todoForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            addTodo(todoInput.value, categoryInput.value);
-        });
-
-        categoryFilterSelect.addEventListener('change', (e) => {
-            currentCategoryFilter = e.target.value;
-            renderTodos();
-        });
-
-        todoInput.addEventListener('input', () => {
-            if (todoInput.value.trim().length > 0) hideError();
-            
-            // Auto-expand textarea height
-            todoInput.style.height = 'auto';
-            todoInput.style.height = Math.max(110, todoInput.scrollHeight) + 'px';
-        });
-
-        todoInput.addEventListener('keydown', (e) => {
-            // Shift + Enter validates and submits the task.
-            // Regular Enter creates a new line by default.
-            if (e.key === 'Enter' && e.shiftKey) {
-                e.preventDefault();
-                addTodo(todoInput.value, categoryInput.value);
-                todoInput.style.height = 'auto';
-            }
-        });
 
         filterBtns.forEach(btn => {
             btn.addEventListener('click', () => {
                 filterBtns.forEach(b => {
-                    b.classList.remove('bg-white', 'shadow-sm', 'text-slate-900');
+                    b.classList.remove('bg-white', 'shadow-sm', 'text-brand-600');
                     b.classList.add('text-slate-600');
                 });
-                btn.classList.add('bg-white', 'shadow-sm', 'text-slate-900');
+                btn.classList.add('bg-white', 'shadow-sm', 'text-brand-600');
                 btn.classList.remove('text-slate-600');
 
                 currentFilter = btn.dataset.filter;
@@ -721,10 +686,16 @@
             });
         });
 
+        categoryFilterSelect.addEventListener('change', (e) => {
+            currentCategoryFilter = e.target.value;
+            renderTodos();
+        });
+
         clearCompletedBtn.addEventListener('click', () => {
             todos = todos.filter(t => !t.completed);
             saveTodos();
             renderTodos();
+            showToast("Tâches terminées effacées");
         });
 
         clearAllBtn.addEventListener('click', () => {
@@ -732,14 +703,22 @@
             todos = [];
             saveTodos();
             renderTodos();
+            showToast("Toutes les tâches ont été supprimées");
         });
 
-        window.addEventListener('DOMContentLoaded', () => {
-            displayDate();
-            const activeBtn = document.querySelector(`[data-filter="${currentFilter}"]`);
-            if (activeBtn) activeBtn.classList.add('bg-white', 'shadow-sm', 'text-slate-900');
-            renderTodos();
-        });
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        // Initialize App
+        displayDate();
+        renderTodos();
     </script>
 </body>
 </html>
