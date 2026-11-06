@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="fr" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ma Liste de Tâches</title>
+    
+    <!-- PWA Meta Tags & Web App Capability -->
+    <meta name="theme-color" content="#4f46e5">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Mes Tâches">
+    <meta name="application-name" content="Mes Tâches">
+
+    <!-- Favicon & Touch Icon SVG Data URI -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512' fill='%234f46e5'><rect width='512' height='512' rx='128' fill='%234f46e5'/><path d='M368 176L216 328L144 256' stroke='white' stroke-width='48' stroke-linecap='round' stroke-linejoin='round' fill='none'/></svg>">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512' fill='%234f46e5'><rect width='512' height='512' rx='128' fill='%234f46e5'/><path d='M368 176L216 328L144 256' stroke='white' stroke-width='48' stroke-linecap='round' stroke-linejoin='round' fill='none'/></svg>">
+
+    <!-- Web App Manifest embedded via Data URI -->
+    <link rel="manifest" href="data:application/json;charset=utf-8,%7B%22name%22%3A%22Gestionnaire%20de%20T%C3%A2ches%22%2C%22short_name%22%3A%22Mes%20T%C3%A2ches%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23f8fafc%22%2C%22theme_color%22%3A%22%234f46e5%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22data%3Aimage%2Fsvg%2Bxml%2C%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%20512%20512%27%20fill%3D%27%25234f46e5%27%3E%3Crect%20width%3D%27512%27%20height%3D%27512%27%20rx%3D%27128%27%20fill%3D%27%25234f46e5%27%2F%3E%3Cpath%20d%3D%27M368%20176L216%20328L144%20256%27%20stroke%3D%27white%27%20stroke-width%3D%2748%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%20fill%3D%27none%27%2F%3E%3C%2Fsvg%3E%22%2C%22sizes%22%3A%22512x512%22%2C%22type%22%3A%22image%2Fsvg%2Bxml%22%2C%22purpose%22%3A%22any%20maskable%22%7D%5D%7D">
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Smooth transitions for item enter/exit */
+        .task-item {
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .task-item.removing {
+            opacity: 0;
+            transform: translateX(30px) scale(0.95);
+        }
+        .task-item.adding {
+            animation: slideIn 0.3s ease-out forwards;
+        }
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px) scale(0.98);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+        /* Custom scrollbar for task container */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: rgba(156, 163, 175, 0.3);
+            border-radius: 20px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background-color: rgba(156, 163, 175, 0.5);
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans min-h-full flex flex-col justify-between selection:bg-brand-500 selection:text-white">
+
+    <!-- PWA Install Modal -->
+    <div id="pwa-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-slate-100 text-center space-y-4">
+            <div class="w-14 h-14 bg-brand-50 text-brand-600 rounded-2xl mx-auto flex items-center justify-center shadow-inner">
+                <i data-lucide="smartphone" class="w-7 h-7"></i>
+            </div>
+            <h3 class="text-lg font-bold text-slate-900">Ajouter à l'écran d'accueil</h3>
+            <p class="text-xs text-slate-500 leading-relaxed">
+                Accédez rapidement à vos tâches en un clic comme une application native.
+            </p>
+            <div class="bg-slate-50 p-3 rounded-2xl text-left text-xs text-slate-600 space-y-2 border border-slate-100">
+                <div class="flex items-start space-x-2">
+                    <span class="font-bold text-brand-600">Android:</span>
+                    <span>Appuyez sur <i data-lucide="more-vertical" class="w-3.5 h-3.5 inline"></i> puis <strong>"Ajouter à l'écran d'accueil"</strong>.</span>
+                </div>
+                <div class="flex items-start space-x-2 border-t border-slate-200/60 pt-2">
+                    <span class="font-bold text-brand-600">iOS:</span>
+                    <span>Appuyez sur <i data-lucide="share" class="w-3.5 h-3.5 inline"></i> puis <strong>"Sur l'écran d'accueil"</strong>.</span>
+                </div>
+            </div>
+            <div class="flex space-x-2 pt-2">
+                <button id="pwa-native-install-btn" class="hidden flex-1 bg-brand-600 text-white font-semibold py-2.5 rounded-xl text-xs hover:bg-brand-700 transition">Installer</button>
+                <button onclick="closePwaModal()" class="flex-1 bg-slate-100 text-slate-700 font-semibold py-2.5 rounded-xl text-xs hover:bg-slate-200 transition">Fermer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification for Copy -->
+    <div id="toast" class="fixed bottom-5 right-5 z-50 bg-slate-900 text-white px-4 py-2.5 rounded-xl shadow-lg flex items-center space-x-2 text-sm transform translate-y-20 opacity-0 transition-all duration-300">
+        <i data-lucide="check-circle" class="w-4 h-4 text-emerald-400"></i>
+        <span id="toast-message">Texte copié !</span>
+    </div>
+
+    <!-- Header & Main Container -->
+    <div class="w-full max-w-2xl mx-auto px-4 py-8 md:py-12 flex-grow flex flex-col">
+        
+        <!-- App Title & Stats Card -->
+        <header class="mb-8">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h1 class="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">Mes Tâches</h1>
+                    <p class="text-slate-500 text-sm mt-1" id="current-date">Aujourd'hui</p>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <!-- PWA Install Trigger Button -->
+                    <button onclick="openPwaModal()" class="flex items-center space-x-1.5 bg-brand-50 hover:bg-brand-100 text-brand-700 px-3 py-2 rounded-2xl text-xs font-semibold transition border border-brand-100" title="Ajouter à l'écran d'accueil">
+                        <i data-lucide="download" class="w-4 h-4"></i>
+                        <span class="hidden sm:inline">App</span>
+                    </button>
+                    <div class="flex items-center space-x-2 bg-white px-4 py-2 rounded-2xl shadow-sm border border-slate-100">
+                        <i data-lucide="check-circle-2" class="w-5 h-5 text-brand-500"></i>
+                        <span id="completion-stats" class="text-sm font-semibold text-slate-700">0/0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+                <div id="progress-bar" class="bg-brand-500 h-full w-0 transition-all duration-500 ease-out"></div>
+            </div>
+        </header>
+
+        <!-- Main Card Component -->
+        <main class="bg-white rounded-3xl shadow-xl shadow-slate-200/60 border border-slate-100 p-6 md:p-8 flex-grow flex flex-col">
+            
+            <!-- Input Task Form with Category Selection -->
+            <form id="todo-form" class="relative mb-6 space-y-3">
+                <div class="flex flex-col sm:flex-row gap-3 items-start">
+                    <!-- Section/Category Input with Datalist Autocomplete -->
+                    <div class="w-full sm:w-1/3 relative">
+                        <input 
+                            type="text" 
+                            id="category-input" 
+                            list="categories-datalist"
+                            placeholder="Titre / Section..." 
+                            class="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition text-slate-800 text-base md:text-lg font-semibold"
+                            autocomplete="off"
+                        >
+                        <datalist id="categories-datalist"></datalist>
+                    </div>
+
+                    <!-- Task Multiline Textarea Input -->
+                    <div class="w-full sm:w-2/3 relative flex items-start">
+                        <textarea 
+                            id="todo-input" 
+                            rows="2"
+                            placeholder="Intitulé de la tâche (plusieurs lignes possibles)..." 
+                            class="w-full pl-5 pr-28 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition text-slate-800 text-base md:text-lg font-medium resize-none min-h-[60px] custom-scrollbar"
+                            autocomplete="off"
+                        ></textarea>
+                        <div class="absolute right-2 top-3 flex items-center space-x-1 bg-slate-50/80 backdrop-blur-sm p-1 rounded-xl">
+                            <label title="Joindre des fichiers" class="p-2.5 text-slate-400 hover:text-brand-600 hover:bg-slate-200/60 rounded-xl cursor-pointer transition flex items-center justify-center">
+                                <i data-lucide="paperclip" class="w-5 h-5"></i>
+                                <input type="file" id="form-file-input" multiple class="hidden">
+                            </label>
+                            <button 
+                                type="submit" 
+                                id="add-btn"
+                                class="p-2.5 bg-brand-600 hover:bg-brand-700 active:scale-95 text-white rounded-xl transition shadow-md shadow-brand-500/20 flex items-center justify-center"
+                                title="Ajouter la tâche"
+                            >
+                                <i data-lucide="plus" class="w-5 h-5"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Helper shortcut label -->
+                <p class="text-[11px] text-slate-400 font-medium px-1 flex items-center space-x-1">
+                    <i data-lucide="info" class="w-3.5 h-3.5 text-slate-400"></i>
+                    <span><strong>Entrée</strong> = Nouvelle ligne &nbsp;|&nbsp; <strong>Shift + Entrée</strong> = Ajouter la tâche</span>
+                </p>
+
+                <!-- Preview attached files before submitting -->
+                <div id="file-preview-bar" class="hidden flex flex-wrap gap-2 pt-1"></div>
+
+                <!-- Validation Error message -->
+                <p id="error-msg" class="hidden text-xs text-rose-500 font-medium">
+                    Veuillez saisir au moins un intitulé de tâche ou joindre un fichier.
+                </p>
+            </form>
+
+            <!-- Filters Bar & Category Selector -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 pb-4 mb-4 gap-3 text-sm font-medium">
+                <div class="flex space-x-1 bg-slate-100 p-1 rounded-xl" id="filters-container">
+                    <button data-filter="all" class="filter-btn active-filter px-3 py-1.5 rounded-lg text-slate-600 transition font-semibold text-xs">Toutes</button>
+                    <button data-filter="active" class="filter-btn px-3 py-1.5 rounded-lg text-slate-600 transition font-semibold text-xs">Actives</button>
+                    <button data-filter="completed" class="filter-btn px-3 py-1.5 rounded-lg text-slate-600 transition font-semibold text-xs">Complétées</button>
+                </div>
+
+                <!-- Category Filter Dropdown -->
+                <div class="flex items-center space-x-2">
+                    <select id="category-filter-select" class="bg-slate-100 border-none text-xs font-semibold text-slate-700 rounded-xl px-3 py-2 focus:ring-2 focus:ring-brand-500 outline-none cursor-pointer">
+                        <option value="ALL">Toutes les sections</option>
+                    </select>
+                    <button 
+                        id="clear-completed" 
+                        class="text-xs text-slate-400 hover:text-rose-500 transition font-medium hidden sm:block"
+                    >
+                        Effacer terminées
+                    </button>
+                </div>
+            </div>
+
+            <!-- Task List Container Grouped by Section -->
+            <div class="flex-grow relative min-h-[240px]">
+                <div id="todo-groups-container" class="space-y-6 max-h-[420px] overflow-y-auto pr-1 custom-scrollbar">
+                    <!-- Dynamic task groups will be inserted here -->
+                </div>
+
+                <!-- Empty State View -->
+                <div id="empty-state" class="hidden absolute inset-0 flex flex-col items-center justify-center text-center p-6">
+                    <div class="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-3 text-slate-300">
+                        <i data-lucide="clipboard-list" class="w-8 h-8"></i>
+                    </div>
+                    <h3 class="text-base font-semibold text-slate-700 mb-1">Aucune tâche disponible</h3>
+                    <p class="text-slate-400 text-xs max-w-xs">Ajoutez de nouvelles tâches par titre/section ou modifiez vos filtres.</p>
+                </div>
+            </div>
+
+            <!-- Footer Stats Inside Card -->
+            <div class="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-400 font-medium">
+                <span id="remaining-count">0 tâche restante</span>
+                <button id="clear-all" class="hover:text-rose-500 transition-colors">Tout supprimer</button>
+            </div>
+        </main>
+    </div>
+
+    <!-- Footer Credit -->
+    <footer class="py-4 text-center text-xs text-slate-400">
+        Conçu pour une organisation quotidienne simple et efficace.
+    </footer>
+
+    <!-- App Logic Script -->
+    <script>
+        // State management
+        let todos = JSON.parse(localStorage.getItem('todos_app_data')) || [];
+        let currentFilter = 'all';
+        let currentCategoryFilter = 'ALL';
+        let pendingFiles = [];
+        let deferredPrompt = null;
+
+        // PWA Installation handling
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            const nativeBtn = document.getElementById('pwa-native-install-btn');
+            if (nativeBtn) nativeBtn.classList.remove('hidden');
+        });
+
+        function openPwaModal() {
+            document.getElementById('pwa-modal').classList.remove('hidden');
+        }
+
+        function closePwaModal() {
+            document.getElementById('pwa-modal').classList.add('hidden');
+        }
+
+        document.getElementById('pwa-native-install-btn')?.addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                deferredPrompt = null;
+                closePwaModal();
+            }
+        });
+
+        // DOM Elements
+        const todoForm = document.getElementById('todo-form');
+        const todoInput = document.getElementById('todo-input');
+        const categoryInput = document.getElementById('category-input');
+        const categoriesDatalist = document.getElementById('categories-datalist');
+        const categoryFilterSelect = document.getElementById('category-filter-select');
+        const formFileInput = document.getElementById('form-file-input');
+        const filePreviewBar = document.getElementById('file-preview-bar');
+        const todoGroupsContainer = document.getElementById('todo-groups-container');
+        const emptyState = document.getElementById('empty-state');
+        const errorMsg = document.getElementById('error-msg');
+        const filterBtns = document.querySelectorAll('.filter-btn');
+        const remainingCount = document.getElementById('remaining-count');
+        const completionStats = document.getElementById('completion-stats');
+        const progressBar = document.getElementById('progress-bar');
+        const clearCompletedBtn = document.getElementById('clear-completed');
+        const clearAllBtn = document.getElementById('clear-all');
+        const currentDateEl = document.getElementById('current-date');
+        const toast = document.getElementById('toast');
+        const toastMessage = document.getElementById('toast-message');
+
+        function displayDate() {
+            const options = { weekday: 'long', day: 'numeric', month: 'long' };
+            currentDateEl.textContent = new Date().toLocaleDateString('fr-FR', options);
+        }
+
+        function showToast(msg) {
+            toastMessage.textContent = msg;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 2500);
+        }
+
+        function saveTodos() {
+            try {
+                localStorage.setItem('todos_app_data', JSON.stringify(todos));
+            } catch (e) {
+                showToast("Limite de stockage atteinte !");
+            }
+        }
+
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve({
+                    id: Date.now().toString() + Math.random().toString(36).substr(2, 4),
+                    name: file.name,
+                    size: (file.size / 1024).toFixed(1) + ' KB',
+                    type: file.type,
+                    data: reader.result
+                });
+                reader.onerror = error => reject(error);
+            });
+        }
+
+        formFileInput.addEventListener('change', async (e) => {
+            const files = Array.from(e.target.files);
+            for (const file of files) {
+                if (file.size > 2 * 1024 * 1024) {
+                    showToast(`"${file.name}" dépasse 2 Mo.`);
+                    continue;
+                }
+                const fileObj = await fileToBase64(file);
+                pendingFiles.push(fileObj);
+            }
+            formFileInput.value = '';
+            renderPendingFiles();
+        });
+
+        function renderPendingFiles() {
+            if (pendingFiles.length === 0) {
+                filePreviewBar.classList.add('hidden');
+                filePreviewBar.innerHTML = '';
+                return;
+            }
+            filePreviewBar.classList.remove('hidden');
+            filePreviewBar.innerHTML = pendingFiles.map((f, idx) => `
+                <div class="flex items-center space-x-1.5 bg-slate-200/70 text-slate-700 text-xs px-2.5 py-1 rounded-lg">
+                    <i data-lucide="${f.type.startsWith('image/') ? 'image' : 'file-text'}" class="w-3.5 h-3.5"></i>
+                    <span class="max-w-[120px] truncate font-medium">${escapeHtml(f.name)}</span>
+                    <button type="button" onclick="removePendingFile(${idx})" class="text-slate-400 hover:text-rose-500 ml-1">
+                        <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                    </button>
+                </div>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        window.removePendingFile = function(index) {
+            pendingFiles.splice(index, 1);
+            renderPendingFiles();
+        };
+
+        window.copyTaskText = function(text) {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(() => showToast("Texte copié !")).catch(() => fallbackCopy(text));
+            } else {
+                fallbackCopy(text);
+            }
+        };
+
+        function fallbackCopy(text) {
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            textArea.style.position = "fixed";
+            textArea.style.left = "-9999px";
+            document.body.appendChild(textArea);
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                showToast("Texte copié !");
+            } catch (err) {
+                showToast("Échec de la copie");
+            }
+            document.body.removeChild(textArea);
+        }
+
+        window.addFileToTask = async function(todoId, inputEl) {
+            const files = Array.from(inputEl.files);
+            const todo = todos.find(t => t.id === todoId);
+            if (!todo) return;
+            if (!todo.files) todo.files = [];
+
+            for (const file of files) {
+                if (file.size > 2 * 1024 * 1024) {
+                    showToast(`"${file.name}" dépasse 2 Mo.`);
+                    continue;
+                }
+                const fileObj = await fileToBase64(file);
+                todo.files.push(fileObj);
+            }
+            saveTodos();
+            renderTodos();
+        };
+
+        window.deleteTaskFile = function(todoId, fileId) {
+            const todo = todos.find(t => t.id === todoId);
+            if (!todo || !todo.files) return;
+            todo.files = todo.files.filter(f => f.id !== fileId);
+            saveTodos();
+            renderTodos();
+        };
+
+        // Update Datalist & Select dropdowns for categories
+        function updateCategoryOptions() {
+            const categories = [...new Set(todos.map(t => t.category || 'Général'))].sort();
+            
+            // Datalist for autocomplete in form
+            categoriesDatalist.innerHTML = categories.map(c => `<option value="${escapeHtml(c)}"></option>`).join('');
+
+            // Select dropdown for filtering
+            const currentSelected = categoryFilterSelect.value;
+            categoryFilterSelect.innerHTML = `<option value="ALL">Toutes les sections (${todos.length})</option>` + 
+                categories.map(c => {
+                    const count = todos.filter(t => (t.category || 'Général') === c).length;
+                    return `<option value="${escapeHtml(c)}">${escapeHtml(c)} (${count})</option>`;
+                }).join('');
+            
+            categoryFilterSelect.value = categories.includes(currentSelected) || currentSelected === 'ALL' ? currentSelected : 'ALL';
+            currentCategoryFilter = categoryFilterSelect.value;
+        }
+
+        // Render Todo Groups
+        function renderTodos() {
+            updateCategoryOptions();
+            todoGroupsContainer.innerHTML = '';
+
+            // Filter Todos by status and selected section
+            const filteredTodos = todos.filter(todo => {
+                const matchesStatus = currentFilter === 'all' || 
+                                     (currentFilter === 'active' && !todo.completed) || 
+                                     (currentFilter === 'completed' && todo.completed);
+                
+                const taskCategory = todo.category || 'Général';
+                const matchesCategory = currentCategoryFilter === 'ALL' || taskCategory === currentCategoryFilter;
+
+                return matchesStatus && matchesCategory;
+            });
+
+            if (filteredTodos.length === 0) {
+                emptyState.classList.remove('hidden');
+            } else {
+                emptyState.classList.add('hidden');
+            }
+
+            // Group tasks by category
+            const grouped = {};
+            filteredTodos.forEach(todo => {
+                const cat = todo.category || 'Général';
+                if (!grouped[cat]) grouped[cat] = [];
+                grouped[cat].push(todo);
+            });
+
+            // Render each group block
+            Object.keys(grouped).sort().forEach(categoryName => {
+                const groupSection = document.createElement('div');
+                groupSection.className = 'bg-slate-50/70 border border-slate-200/80 rounded-2xl p-4 shadow-sm space-y-3';
+
+                const groupHeader = `
+                    <div class="flex items-center justify-between border-b border-slate-200/60 pb-2">
+                        <div class="flex items-center space-x-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-brand-500"></span>
+                            <h2 class="text-sm font-bold text-slate-800 uppercase tracking-wider">${escapeHtml(categoryName)}</h2>
+                            <span class="text-xs font-semibold px-2 py-0.5 bg-slate-200/80 text-slate-600 rounded-full">${grouped[categoryName].length}</span>
+                        </div>
+                        <button onclick="quickAddSectionTask('${escapeHtml(categoryName).replace(/'/g, "\\'")}')" class="text-xs text-brand-600 hover:text-brand-700 font-semibold flex items-center space-x-1">
+                            <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                            <span>Ajouter</span>
+                        </button>
+                    </div>
+                `;
+
+                const listUl = document.createElement('ul');
+                listUl.className = 'space-y-2.5';
+
+                grouped[categoryName].forEach(todo => {
+                    const li = document.createElement('li');
+                    li.className = `task-item group flex flex-col p-3.5 bg-white hover:bg-slate-100/60 rounded-xl border border-slate-100 shadow-sm transition ${todo.completed ? 'opacity-75' : ''}`;
+                    li.dataset.id = todo.id;
+
+                    const hasFiles = todo.files && todo.files.length > 0;
+
+                    li.innerHTML = `
+                        <div class="flex items-start justify-between w-full">
+                            <div class="flex items-start space-x-3.5 flex-grow min-w-0 pr-2 pt-0.5">
+                                <button 
+                                    onclick="toggleTask('${todo.id}')"
+                                    class="w-6 h-6 rounded-lg flex items-center justify-center transition border flex-shrink-0 mt-0.5 ${
+                                        todo.completed 
+                                            ? 'bg-brand-500 border-brand-500 text-white' 
+                                            : 'border-slate-300 hover:border-brand-500 bg-white'
+                                    }"
+                                >
+                                    ${todo.completed ? '<i data-lucide="check" class="w-4 h-4 stroke-[3]"></i>' : ''}
+                                </button>
+                                <div class="whitespace-pre-wrap break-words text-base md:text-lg text-slate-800 font-medium leading-relaxed w-full ${todo.completed ? 'line-through text-slate-400' : ''}">
+                                    ${escapeHtml(todo.text)}
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center space-x-1 opacity-90 sm:opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition flex-shrink-0">
+                                <button 
+                                    onclick="copyTaskText('${escapeHtml(todo.text).replace(/'/g, "\\'").replace(/\n/g, "\\n")}')"
+                                    class="p-2 text-slate-400 hover:text-brand-600 hover:bg-slate-100 rounded-lg transition"
+                                    title="Copier le texte"
+                                >
+                                    <i data-lucide="copy" class="w-4 h-4"></i>
+                                </button>
+
+                                <label class="p-2 text-slate-400 hover:text-brand-600 hover:bg-slate-100 rounded-lg cursor-pointer transition" title="Ajouter des fichiers">
+                                    <i data-lucide="paperclip" class="w-4 h-4"></i>
+                                    <input type="file" multiple class="hidden" onchange="addFileToTask('${todo.id}', this)">
+                                </label>
+
+                                <button 
+                                    onclick="deleteTask('${todo.id}')"
+                                    class="p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition"
+                                    title="Supprimer"
+                                >
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        ${hasFiles ? `
+                            <div class="mt-2 pt-2 border-t border-slate-100 flex flex-wrap gap-1.5">
+                                ${todo.files.map(file => `
+                                    <div class="flex items-center space-x-1.5 bg-slate-50 border border-slate-200 px-2 py-1 rounded-lg text-[11px] text-slate-700 max-w-full">
+                                        ${file.type.startsWith('image/') 
+                                            ? `<img src="${file.data}" alt="${escapeHtml(file.name)}" class="w-4 h-4 rounded object-cover flex-shrink-0">` 
+                                            : `<i data-lucide="file-text" class="w-3.5 h-3.5 text-brand-500 flex-shrink-0"></i>`
+                                        }
+                                        <a href="${file.data}" download="${escapeHtml(file.name)}" class="truncate hover:underline font-medium max-w-[120px]" title="${escapeHtml(file.name)}">
+                                            ${escapeHtml(file.name)}
+                                        </a>
+                                        <button 
+                                            onclick="deleteTaskFile('${todo.id}', '${file.id}')" 
+                                            class="text-slate-300 hover:text-rose-500 transition ml-0.5"
+                                        >
+                                            <i data-lucide="x" class="w-3 h-3"></i>
+                                        </button>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        ` : ''}
+                    `;
+                    listUl.appendChild(li);
+                });
+
+                groupSection.innerHTML = groupHeader;
+                groupSection.appendChild(listUl);
+                todoGroupsContainer.appendChild(groupSection);
+            });
+
+            updateStats();
+            lucide.createIcons();
+        }
+
+        window.quickAddSectionTask = function(sectionName) {
+            categoryInput.value = sectionName;
+            todoInput.focus();
+        };
+
+        function addTodo(text, category) {
+            const trimmedText = text.trim();
+            const trimmedCategory = category.trim() || 'Général';
+
+            if (!trimmedText && pendingFiles.length === 0) {
+                showError();
+                return;
+            }
+
+            hideError();
+
+            const newTodo = {
+                id: Date.now().toString(),
+                text: trimmedText || 'Tâche avec pièce(s) jointe(s)',
+                category: trimmedCategory,
+                completed: false,
+                files: [...pendingFiles],
+                createdAt: new Date()
+            };
+
+            todos.unshift(newTodo);
+            saveTodos();
+            
+            pendingFiles = [];
+            renderPendingFiles();
+            renderTodos();
+
+            todoInput.value = '';
+        }
+
+        window.toggleTask = function(id) {
+            todos = todos.map(todo => {
+                if (todo.id === id) return { ...todo, completed: !todo.completed };
+                return todo;
+            });
+            saveTodos();
+            renderTodos();
+        };
+
+        window.deleteTask = function(id) {
+            const itemEl = document.querySelector(`[data-id="${id}"]`);
+            if (itemEl) {
+                itemEl.classList.add('removing');
+                setTimeout(() => {
+                    todos = todos.filter(todo => todo.id !== id);
+                    saveTodos();
+                    renderTodos();
+                }, 250);
+            }
+        };
+
+        function updateStats() {
+            const total = todos.length;
+            const completedCount = todos.filter(t => t.completed).length;
+            const activeCount = total - completedCount;
+
+            remainingCount.textContent = `${activeCount} tâche${activeCount > 1 ? 's' : ''} restante${activeCount > 1 ? 's' : ''}`;
+            completionStats.textContent = `${completedCount}/${total}`;
+
+            const progressPercentage = total === 0 ? 0 : Math.round((completedCount / total) * 100);
+            progressBar.style.width = `${progressPercentage}%`;
+        }
+
+        function showError() {
+            errorMsg.classList.remove('hidden');
+            todoInput.classList.add('border-rose-400', 'bg-rose-50/30');
+        }
+
+        function hideError() {
+            errorMsg.classList.add('hidden');
+            todoInput.classList.remove('border-rose-400', 'bg-rose-50/30');
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        todoForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            addTodo(todoInput.value, categoryInput.value);
+        });
+
+        categoryFilterSelect.addEventListener('change', (e) => {
+            currentCategoryFilter = e.target.value;
+            renderTodos();
+        });
+
+        todoInput.addEventListener('input', () => {
+            if (todoInput.value.trim().length > 0) hideError();
+            
+            // Auto-expand textarea height
+            todoInput.style.height = 'auto';
+            todoInput.style.height = Math.max(60, todoInput.scrollHeight) + 'px';
+        });
+
+        todoInput.addEventListener('keydown', (e) => {
+            // Shift + Enter validates and submits the task.
+            // Regular Enter creates a new line by default.
+            if (e.key === 'Enter' && e.shiftKey) {
+                e.preventDefault();
+                addTodo(todoInput.value, categoryInput.value);
+                todoInput.style.height = 'auto';
+            }
+        });
+
+        filterBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                filterBtns.forEach(b => {
+                    b.classList.remove('bg-white', 'shadow-sm', 'text-slate-900');
+                    b.classList.add('text-slate-600');
+                });
+                btn.classList.add('bg-white', 'shadow-sm', 'text-slate-900');
+                btn.classList.remove('text-slate-600');
+
+                currentFilter = btn.dataset.filter;
+                renderTodos();
+            });
+        });
+
+        clearCompletedBtn.addEventListener('click', () => {
+            todos = todos.filter(t => !t.completed);
+            saveTodos();
+            renderTodos();
+        });
+
+        clearAllBtn.addEventListener('click', () => {
+            if (todos.length === 0) return;
+            todos = [];
+            saveTodos();
+            renderTodos();
+        });
+
+        window.addEventListener('DOMContentLoaded', () => {
+            displayDate();
+            const activeBtn = document.querySelector(`[data-filter="${currentFilter}"]`);
+            if (activeBtn) activeBtn.classList.add('bg-white', 'shadow-sm', 'text-slate-900');
+            renderTodos();
+        });
+    </script>
+</body>
+</html>
