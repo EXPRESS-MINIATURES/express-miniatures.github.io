@@ -120,10 +120,10 @@
     </div>
 
     <!-- Header & Main Container -->
-    <div class="w-full max-w-2xl mx-auto px-4 py-8 md:py-12 flex-grow flex flex-col">
+    <div class="w-full max-w-5xl xl:max-w-6xl mx-auto px-4 py-6 md:py-10 flex-grow flex flex-col">
         
         <!-- App Title & Stats Card -->
-        <header class="mb-8">
+        <header class="mb-6">
             <div class="flex items-center justify-between mb-4">
                 <div>
                     <h1 class="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">Mes Tâches</h1>
@@ -153,9 +153,9 @@
             
             <!-- Input Task Form with Category Selection -->
             <form id="todo-form" class="relative mb-6 space-y-3">
-                <div class="flex flex-col sm:flex-row gap-3 items-start">
+                <div class="flex flex-col md:flex-row gap-3 items-start">
                     <!-- Section/Category Input with Datalist Autocomplete -->
-                    <div class="w-full sm:w-1/3 relative">
+                    <div class="w-full md:w-1/4 relative">
                         <input 
                             type="text" 
                             id="category-input" 
@@ -168,15 +168,15 @@
                     </div>
 
                     <!-- Task Multiline Textarea Input -->
-                    <div class="w-full sm:w-2/3 relative flex items-start">
+                    <div class="w-full md:w-3/4 relative flex items-start">
                         <textarea 
                             id="todo-input" 
-                            rows="2"
+                            rows="4"
                             placeholder="Intitulé de la tâche (plusieurs lignes possibles)..." 
-                            class="w-full pl-5 pr-28 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition text-slate-800 text-base md:text-lg font-medium resize-none min-h-[60px] custom-scrollbar"
+                            class="w-full pl-5 pr-28 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition text-slate-800 text-base md:text-lg font-medium resize-y min-h-[110px] custom-scrollbar"
                             autocomplete="off"
                         ></textarea>
-                        <div class="absolute right-2 top-3 flex items-center space-x-1 bg-slate-50/80 backdrop-blur-sm p-1 rounded-xl">
+                        <div class="absolute right-2 top-3 flex items-center space-x-1 bg-slate-50/90 backdrop-blur-sm p-1.5 rounded-xl border border-slate-200/50 shadow-sm">
                             <label title="Joindre des fichiers" class="p-2.5 text-slate-400 hover:text-brand-600 hover:bg-slate-200/60 rounded-xl cursor-pointer transition flex items-center justify-center">
                                 <i data-lucide="paperclip" class="w-5 h-5"></i>
                                 <input type="file" id="form-file-input" multiple class="hidden">
@@ -211,14 +211,14 @@
             <!-- Filters Bar & Category Selector -->
             <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 pb-4 mb-4 gap-3 text-sm font-medium">
                 <div class="flex space-x-1 bg-slate-100 p-1 rounded-xl" id="filters-container">
-                    <button data-filter="all" class="filter-btn active-filter px-3 py-1.5 rounded-lg text-slate-600 transition font-semibold text-xs">Toutes</button>
-                    <button data-filter="active" class="filter-btn px-3 py-1.5 rounded-lg text-slate-600 transition font-semibold text-xs">Actives</button>
-                    <button data-filter="completed" class="filter-btn px-3 py-1.5 rounded-lg text-slate-600 transition font-semibold text-xs">Complétées</button>
+                    <button data-filter="all" class="filter-btn active-filter px-3.5 py-1.5 rounded-lg text-slate-600 transition font-semibold text-xs">Toutes</button>
+                    <button data-filter="active" class="filter-btn px-3.5 py-1.5 rounded-lg text-slate-600 transition font-semibold text-xs">Actives</button>
+                    <button data-filter="completed" class="filter-btn px-3.5 py-1.5 rounded-lg text-slate-600 transition font-semibold text-xs">Complétées</button>
                 </div>
 
                 <!-- Category Filter Dropdown -->
-                <div class="flex items-center space-x-2">
-                    <select id="category-filter-select" class="bg-slate-100 border-none text-xs font-semibold text-slate-700 rounded-xl px-3 py-2 focus:ring-2 focus:ring-brand-500 outline-none cursor-pointer">
+                <div class="flex items-center space-x-3">
+                    <select id="category-filter-select" class="bg-slate-100 border-none text-xs font-semibold text-slate-700 rounded-xl px-3.5 py-2 focus:ring-2 focus:ring-brand-500 outline-none cursor-pointer">
                         <option value="ALL">Toutes les sections</option>
                     </select>
                     <button 
@@ -231,8 +231,8 @@
             </div>
 
             <!-- Task List Container Grouped by Section -->
-            <div class="flex-grow relative min-h-[240px]">
-                <div id="todo-groups-container" class="space-y-6 max-h-[420px] overflow-y-auto pr-1 custom-scrollbar">
+            <div class="flex-grow relative min-h-[300px]">
+                <div id="todo-groups-container" class="space-y-6 max-h-[500px] overflow-y-auto pr-1 custom-scrollbar">
                     <!-- Dynamic task groups will be inserted here -->
                 </div>
 
@@ -694,7 +694,7 @@
             
             // Auto-expand textarea height
             todoInput.style.height = 'auto';
-            todoInput.style.height = Math.max(60, todoInput.scrollHeight) + 'px';
+            todoInput.style.height = Math.max(110, todoInput.scrollHeight) + 'px';
         });
 
         todoInput.addEventListener('keydown', (e) => {
